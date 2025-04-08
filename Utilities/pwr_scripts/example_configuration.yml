@@ -1,0 +1,35 @@
+# /*---------------------------------------------------------------------------------------------
+#  * Copyright (c) 2024 STMicroelectronics.
+#  * All rights reserved.
+#  *
+#  * This software is licensed under terms that can be found in the LICENSE file in
+#  * the root directory of this software component.
+#  * If no LICENSE file comes with this software, it is provided AS-IS.
+#  *--------------------------------------------------------------------------------------------*/
+
+
+# Give list of devices for which we will probe output
+# device type can only be stlink_pwr_ctrl or salae
+# only one salae device is supported
+devices:
+# for stlink_pwr_ctrl set following attributes
+#   name : name output in csv header
+#   vdd : voltage to apply
+#   efficiency: efficiency of following buck converter if any else give 1.0
+#   serial : serial number of attached stlink pwr ctrl
+  - {
+      type: stlink_pwr_ctrl,
+      name: VDDCORE,
+      vdd: 3.3,
+      efficiency: 0.87,
+      serial: 003B00243432511939383236
+    }
+# for DK Virtual COM set following attributes
+#   name : only use internally
+#   baud_rate : serial port speed
+#   serial : serial number of the STLink embedded in the DK-board
+  - {
+      type: stlink_com_ctrl,
+      baud_rate: 115200,
+      serial: 003A00433331511234333834
+    }
