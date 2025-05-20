@@ -28,7 +28,7 @@ BUILD_DIR = build
 # C sources
 C_SOURCES += Src/main.c
 C_SOURCES += Src/syscalls.c
-C_SOURCES += Src/app_postprocess.c
+C_SOURCES += $(wildcard Lib/ai-postprocessing-wrapper/*.c)
 C_SOURCES += Src/app_fuseprogramming.c
 C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/od_pp_yolov2.c
 C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/od_pp_yolov5.c
@@ -37,6 +37,9 @@ C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/od_pp_centernet.c
 C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/od_pp_ssd_st.c
 C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/od_pp_ssd.c
 C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/vision_models_pp.c
+C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/vision_models_pp_maxi_if32.c
+C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/vision_models_pp_maxi_is8.c
+C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/vision_models_pp_maxi_iu8.c
 C_SOURCES += Src/stm32_lcd_ex.c
 C_SOURCES += Src/stm32n6xx_it.c
 C_SOURCES += Src/mcu_cache.c
@@ -179,6 +182,7 @@ C_INCLUDES += -ILib/Camera_Middleware/sensors/vd55g1
 C_INCLUDES += -ILib/Camera_Middleware/sensors/vd6g
 
 C_INCLUDES += -IInc
+C_INCLUDES += -ILib/ai-postprocessing-wrapper
 C_INCLUDES += -ILib/lib_vision_models_pp/lib_vision_models_pp/Inc
 C_INCLUDES += -ILib/AI_Runtime/Npu/ll_aton
 C_INCLUDES += -ILib/AI_Runtime/Npu/Devices/STM32N6XX
@@ -214,7 +218,7 @@ CFLAGS += -std=gnu11
 LDSCRIPT = STM32CubeIDE/STM32N657xx.ld
 
 # libraries
-LIBS = -lc -lm -lnosys -lNetworkRuntime1000_CM55_GCC -ln6-evision-awb_gcc -ln6-evision-st-ae_gcc
+LIBS = -lc -lm -lnosys -l:NetworkRuntime1010_CM55_GCC.a -ln6-evision-awb_gcc -ln6-evision-st-ae_gcc
 LIBDIR = -LLib/AI_Runtime/Lib/GCC/ARMCortexM55
 LIBDIR += -LLib/Camera_Middleware/ISP_Library/evision/Lib
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections

@@ -2,4 +2,4 @@
 matplotlib>=3.8.2
 pyserial>=3.5
 pyyaml==6.0.1
-PyQt5>5.15.11
+PyQt5>=5.15.11

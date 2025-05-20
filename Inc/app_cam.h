@@ -1,6 +1,6 @@
  /**
  ******************************************************************************
- * @file    cam_vd55g1.h
+ * @file    app_cam.h
  * @author  GPM Application Team
  *
  ******************************************************************************
@@ -15,8 +15,8 @@
  *
  ******************************************************************************
  */
-#ifndef CAM_CAMERA
-#define CAM_CAMERA
+#ifndef APP_CAM_H
+#define APP_CAM_H
 
 #define CAMERA_FPS 30
 
@@ -30,4 +30,4 @@ void CAM_IspUpdate(void);
 void CAM_Sensor_Start(void);
 void CAM_Sensor_Stop(void);
 
-#endif
+#endif /* APP_CAM_H */

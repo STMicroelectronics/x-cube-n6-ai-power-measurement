@@ -136,7 +136,7 @@ detailed instructions to use these scripts are listed in this [README.md](./Util
 - IAR Embedded Workbench for Arm (**EWARM 9.40.1**) + N6 patch ([**EWARMv9_STM32N6xx_V1.0.0**](STM32Cube_FW_N6/Utilities/PC_Software/EWARMv9_STM32N6xx_V1.0.0.zip))
 - STM32CubeIDE (**STM32CubeIDE 1.17.0**)
 - STM32CubeProgrammer (**v2.18.0**)
-- [STEdgeAI](https://www.st.com/en/development-tools/stedgeai-core.html) (**v2.0.0**)
+- [STEdgeAI](https://www.st.com/en/development-tools/stedgeai-core.html) (**v2.1.0**)
 
 
 ## Boot modes
