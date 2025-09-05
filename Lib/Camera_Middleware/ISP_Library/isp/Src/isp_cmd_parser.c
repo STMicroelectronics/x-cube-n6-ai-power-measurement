@@ -64,6 +64,7 @@ typedef enum {
   ISP_CMD_SENSORDELAY          = 0x1A,
   ISP_CMD_SENSORDELAYMEASURE   = 0x1B,
   ISP_CMD_FIRMWARECONFIG       = 0x1C,
+  ISP_CMD_UNIQUE_GAMMA         = 0x1D,
   /* Application API commands */
   ISP_CMD_USER_EXPOSURETARGET  = 0x80,
   ISP_CMD_USER_LISTWBREFMODES  = 0x81,
@@ -351,6 +352,7 @@ ISP_StatusTypeDef ISP_CmdParser_ProcessCommand(ISP_HandleTypeDef *hIsp, uint8_t 
   */
 ISP_StatusTypeDef ISP_CmdParser_SendSensorDelayMeasure(ISP_HandleTypeDef *hIsp, ISP_SensorDelayTypeDef *pSensorDelay)
 {
+  UNUSED(hIsp);
   ISP_CMD_TypeDef cmd = { 0 };
 
   /* Send the answer command */
@@ -574,6 +576,11 @@ static ISP_StatusTypeDef ISP_CmdParser_SetConfig(ISP_HandleTypeDef *hIsp, uint8_
     break;
 
   case ISP_CMD_GAMMA:
+    /* This command is deprecated since unique gamma command is now available */
+    ret = ISP_ERR_CMDPARSER_COMMAND;
+    break;
+
+  case ISP_CMD_UNIQUE_GAMMA:
     /* Update both ISP and IQ params */
     ret = ISP_SVC_ISP_SetGamma(hIsp, &c.gamma.data);
     if (ret == ISP_OK)
@@ -754,6 +761,11 @@ static ISP_StatusTypeDef ISP_CmdParser_GetConfig(ISP_HandleTypeDef *hIsp, uint8_
     break;
 
   case ISP_CMD_GAMMA:
+    /* This command is deprecated since unique gamma command is now available */
+    ret = ISP_ERR_CMDPARSER_COMMAND;
+    break;
+
+  case ISP_CMD_UNIQUE_GAMMA:
     c.gamma.data = IQParamConfig->gamma;
     break;
 
@@ -799,7 +811,7 @@ static ISP_StatusTypeDef ISP_CmdParser_GetConfig(ISP_HandleTypeDef *hIsp, uint8_
 
   if (!((cmd_id == ISP_CMD_STATISTICUP || cmd_id == ISP_CMD_STATISTICDOWN || cmd_id == ISP_CMD_SENSORDELAYMEASURE) && (ret == ISP_OK)))
   {
-    /* Send command answer (except for statistic and SensorDelayMeasuer where the answer is sent upon callback call */
+    /* Send command answer (except for statistic and SensorDelayMeasure where the answer is sent upon callback call */
     ISP_ToolCom_SendData((uint8_t*)&c, sizeof(c), NULL, NULL);
   }
 
@@ -869,6 +881,7 @@ static void ISP_CmdParser_SendDumpData(uint8_t* pFrame, uint32_t size)
   */
 static ISP_StatusTypeDef ISP_CmdParser_StatUpCb(ISP_AlgoTypeDef *pAlgo)
 {
+  UNUSED(pAlgo);
   ISP_CMD_TypeDef cmd = { 0 };
 
   /* Send the answer command */
@@ -889,6 +902,7 @@ static ISP_StatusTypeDef ISP_CmdParser_StatUpCb(ISP_AlgoTypeDef *pAlgo)
   */
 static ISP_StatusTypeDef ISP_CmdParser_StatDownCb(ISP_AlgoTypeDef *pAlgo)
 {
+  UNUSED(pAlgo);
   ISP_CMD_TypeDef cmd = { 0 };
 
   /* Send the answer command */

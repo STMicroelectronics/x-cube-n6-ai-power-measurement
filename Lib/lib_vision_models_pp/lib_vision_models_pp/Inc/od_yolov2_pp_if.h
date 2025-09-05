@@ -22,15 +22,15 @@
 /* --------------------------------------- */
 typedef struct yolov2_pp_in
 {
-	float32_t* pRaw_detections;
-} yolov2_pp_in_t;
+  void* pRaw_detections;
+} od_yolov2_pp_in_t;
 
 
 
 /* Generic Static parameters */
 /* ------------------------- */
 
-typedef struct yolov2_pp_static_param {
+typedef struct od_yolov2_pp_static_param {
   int32_t  nb_classes;
   int32_t  nb_anchors;
   int32_t  grid_width;
@@ -41,7 +41,10 @@ typedef struct yolov2_pp_static_param {
   float32_t	iou_threshold;
   const float32_t	*pAnchors;
   int32_t nb_detect;
-} yolov2_pp_static_param_t;
+  float32_t raw_scale;
+  int8_t raw_zero_point;
+  void *pScratchBuffer;
+} od_yolov2_pp_static_param_t;
 
 
 
@@ -53,22 +56,35 @@ typedef struct yolov2_pp_static_param {
  * @param [IN] Input static parameters
  * @retval Error code
  */
-int32_t od_yolov2_pp_reset(yolov2_pp_static_param_t *pInput_static_param);
+int32_t od_yolov2_pp_reset(od_yolov2_pp_static_param_t *pInput_static_param);
 
 
 /*!
  * @brief Object detector post processing : includes output detector remapping,
- *        nms and score filtering for YoloV2.
+ *        nms and score filtering for YoloV2 (float32_t input data).
  *
  * @param [IN] Pointer on input data
  *             Pointer on output data
  *             pointer on static parameters
  * @retval Error code
  */
-int32_t od_yolov2_pp_process(yolov2_pp_in_t *pInput,
-                                    od_pp_out_t *pOutput,
-                                    yolov2_pp_static_param_t *pInput_static_param);
+int32_t od_yolov2_pp_process(od_yolov2_pp_in_t *pInput,
+                             od_pp_out_t *pOutput,
+                             od_yolov2_pp_static_param_t *pInput_static_param);
 
+
+/*!
+ * @brief Object detector post processing : includes output detector remapping,
+ *        nms and score filtering for YoloV2 (int8_t input data).
+ *
+ * @param [IN] Pointer on input data
+ *             Pointer on output data
+ *             pointer on static parameters
+ * @retval Error code
+ */
+int32_t od_yolov2_pp_process_int8(od_yolov2_pp_in_t *pInput,
+                                  od_pp_out_t *pOutput,
+                                  od_yolov2_pp_static_param_t *pInput_static_param);
 
 
 #ifdef __cplusplus

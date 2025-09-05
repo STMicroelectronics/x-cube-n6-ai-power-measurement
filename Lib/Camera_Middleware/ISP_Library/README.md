@@ -1,6 +1,6 @@
 # STM32 ISP Library
 
-![latest tag](https://img.shields.io/badge/tag-1.1.0-blue)
+![latest tag](https://img.shields.io/badge/tag-1.2.0-blue)
 
 The ISP Library middleware (running on the target) hosts 2A algorithms
 (Auto Exposure and Auto White Balance) and mechanisms to control the
@@ -18,11 +18,11 @@ ISP_MW_TUNING_TOOL_SUPPORT must be enabled.
 - evision: 2A algorithms that are delivered as binary
 
 ## Enhancements, new features
-- Add sensor delay feature that can be manually set or automaticaly computed thanks to the STM32-ISP-IQTune desktop application
-- Improve AWB algorithm to avoid flickering between 2 illuminants
-- Add AEC anti-flicker feature that support 50Hz and 60Hz region.
-- Statistic area has been removed from init parameter of the ISP_Init() function
-- Fix IAR build warnings in the evision libraries
+- Update gamma feature to unique gamma
+- Update isp_param_conf examples
+- Update evision libraries
+- Fix STM32 ISP IQTune communication protocol for MacOS
+- Fix warnings in the evision libraries
 
 ## Known Issues and Limitations
 - None

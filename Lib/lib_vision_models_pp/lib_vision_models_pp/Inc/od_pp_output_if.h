@@ -11,9 +11,9 @@
 #define __OD_POSTPROCESS_INTERFACE_IF_H__
 
 /* Error return codes */
-#define AI_OD_POSTPROCESS_ERROR_NO     (0)
-#define AI_OD_POSTPROCESS_ERROR_BAD_HW (-1)
-#define AI_OD_POSTPROCESS_ERROR        (-2)
+#define AI_OD_POSTPROCESS_ERROR_NO       (0)
+#define AI_OD_POSTPROCESS_ERROR_BAD_HW   (-1)
+#define AI_OD_POSTPROCESS_ERROR          (-2)
 
 #ifdef __cplusplus
  extern "C" {

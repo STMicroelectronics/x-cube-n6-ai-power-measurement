@@ -21,8 +21,8 @@ This middleware simplifies the development process for applications that require
 
 | Name           | Version                  | Release notes
 |-----           | -------                  | -------------
-| Isp Library    | v1.1.0                   | [release notes](ISP_Library/README.md)
-| imx335 driver  | v1.3.1-cmw-custom        | [release notes](sensors/imx335/Release_Notes.html)
+| Isp Library    | v1.2.0                   | [release notes](ISP_Library/README.md)
+| imx335 driver  | v1.3.1-cmw-patch-2      | [release notes](sensors/imx335/Release_Notes.html)
 | vd6g driver    | v1.0.0                   |
 | vd55g1 driver  | v1.0.0                   |
 
@@ -32,6 +32,13 @@ This middleware simplifies the development process for applications that require
 - MB1939 STM32N6570-DK revC
 
 ## Update history
+
+### V1.4.3 / July 2025
+
+- Add support of custom configuration of sensors
+- Modify Init API accordingly
+- Update Isp library to v1.2.0
+
 
 ### V1.4.2 / April 2025
 

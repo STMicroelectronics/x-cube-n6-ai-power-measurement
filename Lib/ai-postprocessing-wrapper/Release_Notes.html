@@ -4,15 +4,17 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>Release Notes for STM32N6 Getting Started</title>
+  <title>Release_Notes</title>
   <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
 div.column{flex: auto; overflow-x: auto;}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-ul.task-list{list-style: none;}
+
+ul.task-list[class]{list-style: none;}
 ul.task-list li input[type="checkbox"] {
+font-size: inherit;
 width: 0.8em;
 margin: 0 0.8em 0.2em -1.6em;
 vertical-align: middle;
@@ -1481,9 +1483,6 @@ margin-left: auto;
 margin-right: auto;
 text-align: center;
 }</style>
-  <!--[if lt IE 9]>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-  <![endif]-->
 </head>
 <body>
 <h1 id="release-notes-for-ai-postprocessing-wrapper">Release Notes for
@@ -1493,6 +1492,14 @@ Ai Postprocessing Wrapper</h1>
 lib_vision_models_pp. It allows to simplify the usage of it in the use
 case of app using multiple types of post processing.</p>
 <h2 id="update-history">Update history</h2>
+<h3 id="v1.0.7-august-2025">V1.0.7 / August 2025</h3>
+<p>BlazeFace post processing bug fix</p>
+<h3 id="v1.0.6-july-2025">V1.0.6 / July 2025</h3>
+<p>Add int8 post processing support for: - Object detection Yolo v2 -
+Object detection Yolo v8 - Object detection ST Yolo X - Single pose
+estimation Movenet - Multi pose estimation Yolo v8 - Semantic
+segmentation Deeplab v3</p>
+<p>Add support for BlazeFace post processing</p>
 <h3 id="v1.0.2-april-2025">V1.0.2 / April 2025</h3>
 <p>Initial Release</p>
 </body>

@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "cmw_camera.h"
+#include "cmw_io.h"
 #ifndef ISP_MW_TUNING_TOOL_SUPPORT
 #include "isp_param_conf.h"
 #endif
@@ -234,11 +235,12 @@ static int32_t CMW_VD66GY_Init(void *io_ctx, CMW_Sensor_Init_t *initSensor)
   int ret;
   int i;
 
+  assert(initSensor != NULL);
+
   if (((CMW_VD66GY_t *)io_ctx)->IsInitialized)
   {
     return CMW_ERROR_NONE;
   }
-
 
   config.frame_rate = initSensor->fps;
   ret = CMW_VD66GY_GetResType(initSensor->width, initSensor->height, &config.resolution);
@@ -246,16 +248,25 @@ static int32_t CMW_VD66GY_Init(void *io_ctx, CMW_Sensor_Init_t *initSensor)
   {
     return CMW_ERROR_WRONG_PARAM;
   }
-  config.ext_clock_freq_in_hz = ((CMW_VD66GY_t *)io_ctx)->ClockInHz;
+
+  CMW_VD66GY_config_t default_sensor_config;
+  CMW_VD66GY_config_t *sensor_config;
+
+  CMW_VD66GY_SetDefaultSensorValues(&default_sensor_config);
+  sensor_config = initSensor->sensor_config ? (CMW_VD66GY_config_t*)(initSensor->sensor_config) : &default_sensor_config;
+
+  config.ext_clock_freq_in_hz = sensor_config->ext_clock_freq_in_hz;
+  config.line_len = sensor_config->line_len;
+  config.out_itf.datalane_nb = sensor_config->csiconfig.datalane_nb;
+  config.out_itf.clock_lane_swap_enable = sensor_config->csiconfig.clock_lane_swap_enable;
+  config.out_itf.data_lane0_swap_enable = sensor_config->csiconfig.data_lane0_swap_enable;
+  config.out_itf.data_lane1_swap_enable = sensor_config->csiconfig.data_lane1_swap_enable;
+  config.out_itf.data_lanes_mapping_swap_enable = sensor_config->csiconfig.data_lanes_mapping_swap_enable;
+
   config.flip_mirror_mode = CMW_VD66GY_getMirrorFlipConfig(initSensor->mirrorFlip);
-  config.line_len = 0;
   config.patgen = VD6G_PATGEN_DISABLE;
   config.flicker = VD6G_FLICKER_FREE_NONE;
-  config.out_itf.datalane_nb = 2;
-  config.out_itf.clock_lane_swap_enable = 1;
-  config.out_itf.data_lane0_swap_enable = 1;
-  config.out_itf.data_lane1_swap_enable = 1;
-  config.out_itf.data_lanes_mapping_swap_enable = 0;
+
   for (i = 0; i < VD6G_GPIO_NB; i++)
   {
     config.gpio_ctrl[i] = VD6G_GPIO_GPIO_IN;
@@ -275,6 +286,19 @@ static int32_t CMW_VD66GY_Init(void *io_ctx, CMW_Sensor_Init_t *initSensor)
 
   ((CMW_VD66GY_t *)io_ctx)->IsInitialized = 1;
   return CMW_ERROR_NONE;
+}
+
+void CMW_VD66GY_SetDefaultSensorValues(CMW_VD66GY_config_t *vd66gy_config)
+{
+  assert(vd66gy_config != NULL);
+
+  vd66gy_config->ext_clock_freq_in_hz = CAMERA_VD66GY_FREQ_IN_HZ; // Default clock frequency
+  vd66gy_config->line_len = 0; // Default line length
+  vd66gy_config->csiconfig.datalane_nb = 2;
+  vd66gy_config->csiconfig.clock_lane_swap_enable = 1;
+  vd66gy_config->csiconfig.data_lane0_swap_enable = 1;
+  vd66gy_config->csiconfig.data_lane1_swap_enable = 1;
+  vd66gy_config->csiconfig.data_lanes_mapping_swap_enable = 0;
 }
 
 static int32_t CMW_VD66GY_Start(void *io_ctx)

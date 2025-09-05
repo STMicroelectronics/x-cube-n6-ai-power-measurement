@@ -1,11 +1,11 @@
 /*---------------------------------------------------------------------------------------------
-#  * Copyright (c) 2023 STMicroelectronics.
-#  * All rights reserved.
-#  *
-#  * This software is licensed under terms that can be found in the LICENSE file in
-#  * the root directory of this software component.
-#  * If no LICENSE file comes with this software, it is provided AS-IS.
-#  *--------------------------------------------------------------------------------------------*/
+  * Copyright (c) 2023 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file in
+  * the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *--------------------------------------------------------------------------------------------*/
 
 #ifndef __OD_YOLOV5_PP_IF_H__
 #define __OD_YOLOV5_PP_IF_H__
@@ -20,18 +20,13 @@
 
 /* I/O structures for YoloV5 detector type */
 /* --------------------------------------- */
-typedef struct yolov5_pp_in_centroid
+typedef struct od_yolov5_pp_in_centroid
 {
-  float32_t *pRaw_detections;
-} yolov5_pp_in_centroid_t;
-
-typedef struct yolov5_pp_in_centroid_uint8
-{
-  uint8_t *pRaw_detections;
-} yolov5_pp_in_centroid_uint8_t;
+  void *pRaw_detections;
+} od_yolov5_pp_in_centroid_t;
 
 
-typedef struct yolov5_pp_static_param {
+typedef struct od_yolov5_pp_static_param {
   int32_t  nb_classes;
   int32_t  nb_total_boxes;
   int32_t  max_boxes_limit;
@@ -40,7 +35,7 @@ typedef struct yolov5_pp_static_param {
   float32_t raw_output_scale;
   uint8_t raw_output_zero_point;
   int32_t nb_detect;
-} yolov5_pp_static_param_t;
+} od_yolov5_pp_static_param_t;
 
 
 /* Exported functions ------------------------------------------------------- */
@@ -51,7 +46,7 @@ typedef struct yolov5_pp_static_param {
  * @param [IN] Input static parameters
  * @retval Error code
  */
-int32_t od_yolov5_pp_reset(yolov5_pp_static_param_t *pInput_static_param);
+int32_t od_yolov5_pp_reset(od_yolov5_pp_static_param_t *pInput_static_param);
 
 
 /*!
@@ -63,9 +58,9 @@ int32_t od_yolov5_pp_reset(yolov5_pp_static_param_t *pInput_static_param);
  *             pointer on static parameters
  * @retval Error code
  */
-int32_t od_yolov5_pp_process(yolov5_pp_in_centroid_t *pInput,
-                                    od_pp_out_t *pOutput,
-                                    yolov5_pp_static_param_t *pInput_static_param);
+int32_t od_yolov5_pp_process(od_yolov5_pp_in_centroid_t *pInput,
+                             od_pp_out_t *pOutput,
+                             od_yolov5_pp_static_param_t *pInput_static_param);
 
 
 /*!
@@ -77,9 +72,9 @@ int32_t od_yolov5_pp_process(yolov5_pp_in_centroid_t *pInput,
  *             pointer on static parameters
  * @retval Error code
  */
-int32_t od_yolov5_pp_process_uint8(yolov5_pp_in_centroid_uint8_t *pInput,
-                                         od_pp_out_t *pOutput,
-                                         yolov5_pp_static_param_t *pInput_static_param);
+int32_t od_yolov5_pp_process_uint8(od_yolov5_pp_in_centroid_t *pInput,
+                                   od_pp_out_t *pOutput,
+                                   od_yolov5_pp_static_param_t *pInput_static_param);
 
 #ifdef __cplusplus
  }

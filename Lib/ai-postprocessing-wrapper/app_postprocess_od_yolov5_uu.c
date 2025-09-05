@@ -24,10 +24,10 @@
 #if POSTPROCESS_TYPE == POSTPROCESS_OD_YOLO_V5_UU
 static od_pp_outBuffer_t out_detections[AI_OD_YOLOV5_PP_TOTAL_BOXES];
 
-int32_t app_postprocess_init(void *params_postprocess)
+int32_t app_postprocess_init(void *params_postprocess, NN_Instance_TypeDef *NN_Instance)
 {
   int32_t error = AI_OD_POSTPROCESS_ERROR_NO;
-  yolov5_pp_static_param_t *params = (yolov5_pp_static_param_t *) params_postprocess;
+  od_yolov5_pp_static_param_t *params = (od_yolov5_pp_static_param_t *) params_postprocess;
   params->nb_classes = AI_OD_YOLOV5_PP_NB_CLASSES;
   params->nb_total_boxes = AI_OD_YOLOV5_PP_TOTAL_BOXES;
   params->max_boxes_limit = AI_OD_YOLOV5_PP_MAX_BOXES_LIMIT;
@@ -43,13 +43,14 @@ int32_t app_postprocess_run(void *pInput[], int nb_input, void *pOutput, void *p
 {
   assert(nb_input == 1);
   int32_t error = AI_OD_POSTPROCESS_ERROR_NO;
+  ((od_yolov5_pp_static_param_t *) pInput_param)->nb_detect = 0;
   od_pp_out_t *pObjDetOutput = (od_pp_out_t *) pOutput;
   pObjDetOutput->pOutBuff = out_detections;
-  yolov5_pp_in_centroid_uint8_t pp_input = {
+  od_yolov5_pp_in_centroid_t pp_input = {
       .pRaw_detections = (uint8_t *) pInput[0]
   };
   error = od_yolov5_pp_process_uint8(&pp_input, pObjDetOutput,
-                                     (yolov5_pp_static_param_t *) pInput_param);
+                                     (od_yolov5_pp_static_param_t *) pInput_param);
   return error;
 }
 #endif

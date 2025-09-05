@@ -21,7 +21,7 @@
  #include <assert.h>
 
  #if POSTPROCESS_TYPE == POSTPROCESS_CUSTOM
- int32_t app_postprocess_init(void *params_postprocess)
+ int32_t app_postprocess_init(void *params_postprocess, NN_Instance_TypeDef *NN_Instance)
  {
  // @User must implement its own app_postprocess_init
  return error;

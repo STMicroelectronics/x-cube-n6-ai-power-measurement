@@ -26,6 +26,7 @@
 #include "isp_cmd_parser.h"
 #endif
 #include <math.h>
+#include <inttypes.h>
 
 /* Private types -------------------------------------------------------------*/
 /* Private constants ---------------------------------------------------------*/
@@ -667,6 +668,7 @@ void ISP_OutputMeta(ISP_HandleTypeDef *hIsp)
 
   if (Meta.outputEnable)
   {
-    printf("Meta[%ld]: L = %d, TG = %ld, G = %ld, E = %ld, CT = %ld\r\n", hIsp->MainPipe_FrameCount, Meta.averageL, Meta.exposureTarget, Meta.gain, Meta.exposure, Meta.colorTemp);
+    printf("Meta[%"PRIu32"]: L = %"PRIu16", TG = %"PRIu32", G = %"PRIu32", E = %"PRIu32", CT = %"PRIu32"\r\n",
+           hIsp->MainPipe_FrameCount, Meta.averageL, Meta.exposureTarget, Meta.gain, Meta.exposure, Meta.colorTemp);
   }
 }

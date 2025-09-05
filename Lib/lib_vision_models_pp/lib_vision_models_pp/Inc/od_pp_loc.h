@@ -86,6 +86,14 @@
 #define AI_CENTERNET_PP_CLASSPROB    (5)
 #define AI_CENTERNET_PP_MAPSEG_NEXTOFFSET    (1)
 
+
+/* Offsets to access face detect blaze face input data */
+#define AI_FD_BLAZEFACE_PP_XCENTER      (0)
+#define AI_FD_BLAZEFACE_PP_YCENTER      (1)
+#define AI_FD_BLAZEFACE_PP_WIDTHREL     (2)
+#define AI_FD_BLAZEFACE_PP_HEIGHTREL    (3)
+#define AI_FD_BLAZEFACE_PP_KEYPOINTS    (4)
+
 #ifdef __cplusplus
   }
 #endif

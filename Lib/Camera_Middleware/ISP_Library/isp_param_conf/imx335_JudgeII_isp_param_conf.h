@@ -73,8 +73,8 @@ static const ISP_IQParamTypeDef ISP_IQParamCacheInit_IMX335 = {
     },
     .AWBAlgo = {
         .enable = 1,
-        .id = { "JudegeII-A", "JudegeII-TL84", "JudgeII-D65", "Free Slot", "Free Slot", },
-        .referenceColorTemp = { 2790, 4120, 6780, 0, 0, },
+        .id = { "JudgeII-A", "JudgeII-TL84", "JudgeII-DAY", "Free Slot", "Free Slot", },
+        .referenceColorTemp = { 2810, 4015, 6650, 0, 0, },
         .ispGainR = { 137000000, 182000000, 244000000, 0, 0, },
         .ispGainG = { 100000000, 100000000, 100000000, 0, 0, },
         .ispGainB = { 287000000, 212000000, 143000000, 0, 0, },
@@ -105,8 +105,7 @@ static const ISP_IQParamTypeDef ISP_IQParamCacheInit_IMX335 = {
         .YSize = 972,
     },
     .gamma = {
-        .enablePipe1 = 1,
-        .enablePipe2 = 1,
+        .enable = 1,
     },
     .sensorDelay = {
         .delay = 3,

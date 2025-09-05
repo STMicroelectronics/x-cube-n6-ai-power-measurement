@@ -4,15 +4,17 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>Release Notes for STM32 Camera Middleware</title>
+  <title>Release_Notes</title>
   <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
 div.column{flex: auto; overflow-x: auto;}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-ul.task-list{list-style: none;}
+
+ul.task-list[class]{list-style: none;}
 ul.task-list li input[type="checkbox"] {
+font-size: inherit;
 width: 0.8em;
 margin: 0 0.8em 0.2em -1.6em;
 vertical-align: middle;
@@ -1481,9 +1483,6 @@ margin-left: auto;
 margin-right: auto;
 text-align: center;
 }</style>
-  <!--[if lt IE 9]>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-  <![endif]-->
 </head>
 <body>
 <h1 id="release-notes-for-stm32-camera-middleware">Release Notes for
@@ -1525,12 +1524,12 @@ abstracting hardware-specific details.</p>
 <tbody>
 <tr class="odd">
 <td>Isp Library</td>
-<td>v1.1.0</td>
+<td>v1.2.0</td>
 <td><a href="ISP_Library/README.md">release notes</a></td>
 </tr>
 <tr class="even">
 <td>imx335 driver</td>
-<td>v1.3.1-cmw-custom</td>
+<td>v1.3.1-cmw-patch-2</td>
 <td><a href="sensors/imx335/Release_Notes.html">release notes</a></td>
 </tr>
 <tr class="odd">
@@ -1551,6 +1550,12 @@ abstracting hardware-specific details.</p>
 <li>MB1939 STM32N6570-DK revC</li>
 </ul>
 <h2 id="update-history">Update history</h2>
+<h3 id="v1.4.3-july-2025">V1.4.3 / July 2025</h3>
+<ul>
+<li>Add support of custom configuration of sensors</li>
+<li>Modify Init API accordingly</li>
+<li>Update Isp library to v1.2.0</li>
+</ul>
 <h3 id="v1.4.2-april-2025">V1.4.2 / April 2025</h3>
 <ul>
 <li>Update Isp library to v1.1.0</li>

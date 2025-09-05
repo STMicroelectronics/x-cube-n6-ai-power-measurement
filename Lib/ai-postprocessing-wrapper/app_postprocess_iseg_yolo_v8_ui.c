@@ -23,15 +23,15 @@
 
 #if POSTPROCESS_TYPE == POSTPROCESS_ISEG_YOLO_V8_UI
 uint8_t _iseg_mask[AI_YOLOV8_SEG_PP_MASK_SIZE * AI_YOLOV8_SEG_PP_MASK_SIZE * AI_YOLOV8_SEG_PP_MAX_BOXES_LIMIT];
-iseg_postprocess_outBuffer_t out_detections[AI_YOLOV8_SEG_PP_MAX_BOXES_LIMIT];
-iseg_postprocess_scratchBuffer_s8_t scratch_detections[AI_YOLOV8_SEG_PP_TOTAL_BOXES];
+iseg_pp_outBuffer_t out_detections[AI_YOLOV8_SEG_PP_MAX_BOXES_LIMIT];
+iseg_yolov8_pp_scratchBuffer_s8_t scratch_detections[AI_YOLOV8_SEG_PP_TOTAL_BOXES];
 float32_t _out_buf_mask[AI_YOLOV8_SEG_PP_MASK_NB];
 int8_t _out_buf_mask_s8[AI_YOLOV8_SEG_PP_MASK_NB * AI_YOLOV8_SEG_PP_TOTAL_BOXES];
 
-int32_t app_postprocess_init(void *params_postprocess)
+int32_t app_postprocess_init(void *params_postprocess, NN_Instance_TypeDef *NN_Instance)
 {
   int32_t error = AI_ISEG_POSTPROCESS_ERROR_NO;
-  yolov8_seg_pp_static_param_t *params = (yolov8_seg_pp_static_param_t *) params_postprocess;
+  iseg_yolov8_pp_static_param_t *params = (iseg_yolov8_pp_static_param_t *) params_postprocess;
   params->nb_classes = AI_YOLOV8_SEG_PP_NB_CLASSES;
   params->nb_total_boxes = AI_YOLOV8_SEG_PP_TOTAL_BOXES;
   params->max_boxes_limit = AI_YOLOV8_SEG_PP_MAX_BOXES_LIMIT;
@@ -59,15 +59,15 @@ int32_t app_postprocess_run(void *pInput[], int nb_input, void *pOutput, void *p
 {
   assert(nb_input == 2);
   int32_t error = AI_ISEG_POSTPROCESS_ERROR_NO;
-  iseg_postprocess_out_t *pSegOutput = (iseg_postprocess_out_t *) pOutput;
+  iseg_pp_out_t *pSegOutput = (iseg_pp_out_t *) pOutput;
   pSegOutput->pOutBuff = out_detections;
-  yolov8_seg_pp_in_centroid_int8_t pp_input =
+  iseg_yolov8_pp_in_centroid_t pp_input =
   {
       .pRaw_detections = (int8_t *) pInput[0],
       .pRaw_masks = (int8_t *) pInput[1]
   };
-  error = iseg_yolov8_pp_process(&pp_input, pOutput,
-                                 (yolov8_seg_pp_static_param_t *) pInput_param);
+  error = iseg_yolov8_pp_process_int8(&pp_input, pOutput,
+                                      (iseg_yolov8_pp_static_param_t *) pInput_param);
 
   return error;
 }

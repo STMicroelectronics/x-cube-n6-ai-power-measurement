@@ -1140,7 +1140,7 @@
             <name>$PROJ_DIR$\..\Model\network.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Lib\AI_Runtime\Lib\ABI2.1\ARMCortexM55\NetworkRuntime1010_CM55_IAR.a</name>
+            <name>$PROJ_DIR$\..\Lib\AI_Runtime\Lib\ABI2.1\ARMCortexM55\NetworkRuntime1020_CM55_IAR.a</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Src\npu_cache.c</name>

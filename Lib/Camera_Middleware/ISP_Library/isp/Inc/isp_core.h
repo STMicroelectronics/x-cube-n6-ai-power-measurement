@@ -286,8 +286,7 @@ typedef struct
 
 typedef struct
 {
-  uint8_t enablePipe1;        /* Enable or disable gamma on pipe 1 */
-  uint8_t enablePipe2;        /* Enable or disable gamma on pipe 2 */
+  uint8_t enable;             /* Enable or disable gamma on pipe 1 and pipe 2 */
 } ISP_GammaTypeDef;
 
 typedef struct
@@ -399,11 +398,12 @@ typedef struct
   uint32_t nbField;           /* Number of valid fields after that one in this structure */
   uint32_t rgbOrder;          /* RGB components order in the RGB24 pixel format (0:RGB - 1:BGR) */
   uint32_t hasStatRemoval;    /* Whether the firmware supports the StatRemoval feature */
-  uint32_t hasGamma;          /* Whether the firmware supports the Gamma Correction feature */
+  uint32_t hasGamma;          /* Whether the firmware supports the Gamma Correction feature alowing to configure pipe1 and pipe2 independently */
   uint32_t hasAntiFlicker;    /* Whether the firmware supports the AEC anti flickering feature */
   uint32_t deviceId;          /* Device Identifier (0:N6 - 1:MP25) */
   uint32_t uId[3];            /* Unique Identifier (3 x 32 bits) */
   uint32_t hasSensorDelay;    /* Whether the firmware supports the Sensor Delay feature */
+  uint32_t hasUniqueGamma;    /* Whether the firmware supports the Gamma Correction feature with a unique gamma value for both pipe1 and pipe2 */
 } ISP_FirmwareConfigTypeDef;
 
 /* Meta data will transit through STLINK if validation test is enabled */

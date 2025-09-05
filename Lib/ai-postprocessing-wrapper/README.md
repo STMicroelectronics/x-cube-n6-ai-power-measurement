@@ -8,7 +8,7 @@ It allows to simplify the usage of it in the use case of app using multiple type
 Each app_postprocess_\<modeltype\>.c implement these functions:
 
 ```C
-int32_t app_postprocess_init(void *params_postprocess)
+int32_t app_postprocess_init(void *params_postprocess, NN_Instance_TypeDef *NN_Instance)
 ```
 
 ```C
@@ -18,18 +18,26 @@ int32_t app_postprocess_run(void *pInput[], int nb_input, void *pOutput, void *p
 To enable the post processing you need to define in a file `app_config.h` the define `POSTPROCESS_TYPE` with one of this value:
 
 ```C
-#define POSTPROCESS_OD_YOLO_V2_UF       (10)  /* Yolov2 postprocessing; Input model: uint8; output: float32         */
-#define POSTPROCESS_OD_YOLO_V5_UU       (11)  /* Yolov5 postprocessing; Input model: uint8; output: uint8           */
-#define POSTPROCESS_OD_YOLO_V8_UF       (12)  /* Yolov8 postprocessing; Input model: uint8; output: float32         */
-#define POSTPROCESS_OD_YOLO_V8_UI       (13)  /* Yolov8 postprocessing; Input model: uint8; output: int8            */
-#define POSTPROCESS_OD_ST_YOLOX_UF      (14)  /* ST YoloX postprocessing; Input model: uint8; output: float32       */
-#define POSTPROCESS_OD_ST_SSD_UF        (15)  /* ST SSD postprocessing; Input model: uint8; output: float32         */
-#define POSTPROCESS_MPE_YOLO_V8_UF      (20)  /* Yolov8 postprocessing; Input model: uint8; output: float32         */
-#define POSTPROCESS_MPE_PD_UF           (21)  /* Palm detector postprocessing; Input model: uint8; output: float32  */
-#define POSTPROCESS_SPE_MOVENET_UF      (22)  /* Movenet postprocessing; Input model: uint8; output: float32        */
-#define POSTPROCESS_ISEG_YOLO_V8_UI     (30)  /* Yolov8 Seg postprocessing; Input model: uint8; output: int8        */
-#define POSTPROCESS_SSEG_DEEPLAB_V3_UF  (40)  /* Deeplabv3 Seg postprocessing; Input model: uint8; output: float32  */
-#define POSTPROCESS_CUSTOM              (100) /* Custom post processing which needs to be implemented by user       */
+#define POSTPROCESS_OD_YOLO_V2_UF       (100)  /* Yolov2 postprocessing; Input model: uint8; output: float32         */
+#define POSTPROCESS_OD_YOLO_V2_UI       (101)  /* Yolov2 postprocessing; Input model: uint8; output: int8            */
+#define POSTPROCESS_OD_YOLO_V5_UU       (102)  /* Yolov5 postprocessing; Input model: uint8; output: uint8           */
+#define POSTPROCESS_OD_YOLO_V8_UF       (103)  /* Yolov8 postprocessing; Input model: uint8; output: float32         */
+#define POSTPROCESS_OD_YOLO_V8_UI       (104)  /* Yolov8 postprocessing; Input model: uint8; output: int8            */
+#define POSTPROCESS_OD_ST_YOLOX_UF      (105)  /* ST YoloX postprocessing; Input model: uint8; output: float32       */
+#define POSTPROCESS_OD_ST_YOLOX_UI      (106)  /* ST YoloX postprocessing; Input model: uint8; output: int8          */
+#define POSTPROCESS_OD_ST_SSD_UF        (107)  /* ST SSD postprocessing; Input model: uint8; output: float32         */
+#define POSTPROCESS_OD_FD_BAZEFACE_UF   (110)  /* blazeface postprocessing; Input model: uint8; output: float32      */
+#define POSTPROCESS_OD_FD_BAZEFACE_UU   (111)  /* blazeface postprocessing; Input model: uint8; output: uint8        */
+#define POSTPROCESS_OD_FD_BAZEFACE_UI   (112)  /* blazeface postprocessing; Input model: uint8; output: int8         */
+#define POSTPROCESS_MPE_YOLO_V8_UF      (200)  /* Yolov8 postprocessing; Input model: uint8; output: float32         */
+#define POSTPROCESS_MPE_YOLO_V8_UI      (201)  /* Yolov8 postprocessing; Input model: uint8; output: int8            */
+#define POSTPROCESS_MPE_PD_UF           (202)  /* Palm detector postprocessing; Input model: uint8; output: float32  */
+#define POSTPROCESS_SPE_MOVENET_UF      (203)  /* Movenet postprocessing; Input model: uint8; output: float32        */
+#define POSTPROCESS_SPE_MOVENET_UI      (204)  /* Movenet postprocessing; Input model: uint8; output: int8           */
+#define POSTPROCESS_ISEG_YOLO_V8_UI     (300)  /* Yolov8 Seg postprocessing; Input model: uint8; output: int8        */
+#define POSTPROCESS_SSEG_DEEPLAB_V3_UF  (400)  /* Deeplabv3 Seg postprocessing; Input model: uint8; output: float32  */
+#define POSTPROCESS_SSEG_DEEPLAB_V3_UI  (401)  /* Deeplabv3 Seg postprocessing; Input model: uint8; output: int8     */
+#define POSTPROCESS_CUSTOM              (1000) /* Custom post processing which needs to be implemented by user       */
 ```
 
 Refer to the [app_postprocess.h](./app_postprocess.h) file for more details.
@@ -46,15 +54,17 @@ These defines need to be specified in the `app_config.h` file according to the s
 
 #### Tiny YOLO v2
 
-To use the Tiny YOLO v2 postprocessing compile this file:
-`app_postprocess_od_yolov2_uf.c`
+To use the Tiny YOLO v2 postprocessing compile one of these files:
+
+- `app_postprocess_od_yolov2_uf.c`: input uint8 ; output float
+- `app_postprocess_od_yolov2_ui.c`: input uint8 ; output int8
 
 For more details about these parameters, see [Tiny YOLOV2 Object Detection Post Processing](../lib_vision_models_pp/lib_vision_models_pp/README.md#tiny-yolov2-object-detection-post-processing).
 
 Example for Tiny YOLO V2 224x224 people detection:
 
 ```C
-#define POSTPROCESS_TYPE POSTPROCESS_OD_YOLO_V2_UF
+#define POSTPROCESS_TYPE POSTPROCESS_OD_YOLO_V2_UI
 
 /* I/O configuration */
 #define AI_OD_YOLOV2_PP_NB_CLASSES        (1)
@@ -132,15 +142,17 @@ Example for YOLOv8 256x256 people detection:
 
 #### ST YOLOX
 
-To use the yolox postprocessing compile this file:
-`app_postprocess_od_st_yolox_uf.c`
+To use the yolox postprocessing compile one of these files:
+
+- `app_postprocess_od_st_yolox_uf.c`: input uint8 ; output float
+- `app_postprocess_od_st_yolox_ui.c`: input uint8 ; output int8
 
 For more details about these parameters, see [ST YOLOX Object Detection Post Processing](../lib_vision_models_pp/lib_vision_models_pp/README.md#st-yolox-object-detection-post-processing).
 
 Example for ST YOLOX 256x256 people detection:
 
 ```C
-#define POSTPROCESS_TYPE POSTPROCESS_OD_ST_YOLOX_UF
+#define POSTPROCESS_TYPE POSTPROCESS_OD_ST_YOLOX_UI
 
 /* I/O configuration */
 #define AI_OD_ST_YOLOX_PP_NB_CLASSES        (1)
@@ -188,19 +200,51 @@ Example for ST SSD:
 #define AI_OD_SSD_ST_PP_MAX_BOXES_LIMIT             (100)
 ```
 
+#### BLAZEFACE
+
+To use the blazeface postprocessing compile one of these files:
+
+- `app_postprocess_od_fd_blazeface_uf.c`: input uint8 ; output float
+- `app_postprocess_od_fd_blazeface_ui.c`: input uint8 ; output int8
+- `app_postprocess_od_fd_blazeface_ui.c`: input uint8 ; output uint8
+
+For more details about these parameters, see [BLAZEFACE Face Detection Post Processing](../lib_vision_models_pp/lib_vision_models_pp/README.md#blazeface-face-detection-post-processing).
+
+Example for BLAZEFACE 128x128 face detection:
+
+```C
+#define POSTPROCESS_TYPE POSTPROCESS_OD_FD_BLAZEFACE_UI
+
+/* I/O configuration */
+#define AI_OD_FD_BLAZEFACE_PP_NB_KEYPOINTS              (6)
+#define AI_OD_FD_BLAZEFACE_PP_NB_CLASSES                (1)
+#define AI_OD_FD_BLAZEFACE_PP_IMG_SIZE                (128)
+
+#define AI_OD_FD_BLAZEFACE_PP_OUT_0_NB_BOXES          (512)
+#define AI_OD_FD_BLAZEFACE_PP_OUT_1_NB_BOXES          (384)
+
+/* Postprocessing */
+#define AI_OD_FD_BLAZEFACE_PP_CONF_THRESHOLD    (0.6000000000f)
+#define AI_OD_FD_BLAZEFACE_PP_IOU_THRESHOLD     (0.3000000000f)
+#define AI_OD_FD_BLAZEFACE_PP_MAX_BOXES_LIMIT   (10)
+```
+
+
 ### Pose estimation
 
 #### Pose estimation YOLOv8
 
-To use the multi pose estimation Yolov8 postprocessing compile this file:
-`app_postprocess_mpe_yolo_v8_uf.c`
+To use the multi pose estimation Yolov8 postprocessing compile one of these files:
+
+- `app_postprocess_mpe_yolo_v8_uf.c`: input uint8 ; output float
+- `app_postprocess_mpe_yolo_v8_ui.c`: input uint8 ; output int8
 
 For more details about these parameters, see [YOLOV8 Multi-Pose Post Processing](../lib_vision_models_pp/lib_vision_models_pp/README.md#yolov8-multi-pose-post-processing).
 
 Example for YOLOv8 pose 256x256:
 
 ```C
-#define POSTPROCESS_TYPE POSTPROCESS_MPE_YOLO_V8_UF
+#define POSTPROCESS_TYPE POSTPROCESS_MPE_YOLO_V8_UI
 
 /* I/O configuration */
 #define AI_MPE_YOLOV8_PP_TOTAL_BOXES       (1344)
@@ -215,15 +259,17 @@ Example for YOLOv8 pose 256x256:
 
 #### MoveNet
 
-To use the single pose estimation movenet postprocessing compile this file:
-`app_postprocess_spe_movenet_uf.c`
+To use the single pose estimation movenet postprocessing compile one of these files:
+
+- `app_postprocess_spe_movenet_uf.c`: input uint8 ; output float
+- `app_postprocess_spe_movenet_ui.c`: input uint8 ; output int8
 
 For more details about these parameters, see [MoveNet Single-Pose Post Processing](../lib_vision_models_pp/lib_vision_models_pp/README.md#movenet-single-pose-post-processing).
 
 Example for MoveNet 192x192 13 keypoints:
 
 ```C
-#define POSTPROCESS_TYPE POSTPROCESS_SPE_MOVENET_UF
+#define POSTPROCESS_TYPE POSTPROCESS_SPE_MOVENET_UI
 
 /* I/O configuration */
 #define AI_SPE_MOVENET_POSTPROC_HEATMAP_WIDTH        (48)		/* Model input width/4 : 192/4  */
@@ -266,15 +312,17 @@ Example for YOLOv8 seg 256x256 COCO:
 
 #### DeepLab V3
 
-To use the semantic segmentation deeplab v3 postprocessing compile this file:
-`app_postprocess_sseg_deeplab_v3_uf.c`
+To use the semantic segmentation deeplab v3 postprocessing compile one of these files:
+
+- `app_postprocess_sseg_deeplab_v3_uf.c`: input uint8 ; output float
+- `app_postprocess_sseg_deeplab_v3_ui.c`: input uint8 ; output int8
 
 For more details about these parameters, see [YOLOV8 Instance Segmentation Post Processing](../lib_vision_models_pp/lib_vision_models_pp/README.md#yolov8-instance-segmentation-post-processing).
 
 Example for Deep Lab V3 256x256 people segmentation:
 
 ```C
-#define POSTPROCESS_TYPE POSTPROCESS_SSEG_DEEPLAB_V3_UF
+#define POSTPROCESS_TYPE POSTPROCESS_SSEG_DEEPLAB_V3_UI
 
 #define AI_SSEG_DEEPLABV3_PP_NB_CLASSES   (2)
 #define AI_SSEG_DEEPLABV3_PP_WIDTH        (256)

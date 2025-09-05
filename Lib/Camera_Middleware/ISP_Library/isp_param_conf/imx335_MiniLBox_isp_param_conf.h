@@ -105,8 +105,10 @@ static const ISP_IQParamTypeDef ISP_IQParamCacheInit_IMX335 = {
         .YSize = 972,
     },
     .gamma = {
-        .enablePipe1 = 1,
-        .enablePipe2 = 1,
+        .enable = 1,
+    },
+    .sensorDelay = {
+        .delay = 3,
     },
 };
 

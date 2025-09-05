@@ -22,10 +22,16 @@
 #include <assert.h>
 
 #if POSTPROCESS_TYPE == POSTPROCESS_OD_ST_YOLOX_UF
-int32_t app_postprocess_init(void *params_postprocess)
+#define MAX(a,b) (((a)>(b))?(a):(b))
+static od_pp_outBuffer_t out_detections[MAX(AI_OD_ST_YOLOX_PP_MAX_BOXES_LIMIT,
+                                            AI_OD_ST_YOLOX_PP_L_GRID_WIDTH * AI_OD_ST_YOLOX_PP_L_GRID_HEIGHT +
+                                            AI_OD_ST_YOLOX_PP_M_GRID_WIDTH * AI_OD_ST_YOLOX_PP_M_GRID_HEIGHT +
+                                            AI_OD_ST_YOLOX_PP_S_GRID_WIDTH * AI_OD_ST_YOLOX_PP_S_GRID_HEIGHT)];
+
+int32_t app_postprocess_init(void *params_postprocess, NN_Instance_TypeDef *NN_Instance)
 {
   int32_t error = AI_OD_POSTPROCESS_ERROR_NO;
-  st_yolox_pp_static_param_t *params = (st_yolox_pp_static_param_t *) params_postprocess;
+  od_st_yolox_pp_static_param_t *params = (od_st_yolox_pp_static_param_t *) params_postprocess;
   params->nb_classes = AI_OD_ST_YOLOX_PP_NB_CLASSES;
   params->nb_anchors = AI_OD_ST_YOLOX_PP_NB_ANCHORS;
   params->grid_width_L = AI_OD_ST_YOLOX_PP_L_GRID_WIDTH;
@@ -48,14 +54,16 @@ int32_t app_postprocess_run(void *pInput[], int nb_input, void *pOutput, void *p
 {
   assert(nb_input == 3);
   int32_t error = AI_OD_POSTPROCESS_ERROR_NO;
+  ((od_st_yolox_pp_static_param_t *) pInput_param)->nb_detect = 0;
   od_pp_out_t *pObjDetOutput = (od_pp_out_t *) pOutput;
-  st_yolox_pp_in_t pp_input = {
+  pObjDetOutput->pOutBuff = out_detections;
+  od_st_yolox_pp_in_t pp_input = {
       .pRaw_detections_S = (float32_t *) pInput[0],
       .pRaw_detections_L = (float32_t *) pInput[1],
       .pRaw_detections_M = (float32_t *) pInput[2],
   };
   error = od_st_yolox_pp_process(&pp_input, pObjDetOutput,
-                                 (st_yolox_pp_static_param_t *) pInput_param);
+                                 (od_st_yolox_pp_static_param_t *) pInput_param);
   return error;
 }
 #endif

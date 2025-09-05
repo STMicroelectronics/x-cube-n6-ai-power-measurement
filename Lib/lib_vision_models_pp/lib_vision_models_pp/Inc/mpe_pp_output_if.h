@@ -25,26 +25,26 @@
 /*Pose structures*/
 typedef struct
 {
-	float32_t x;
-	float32_t y;
-	float32_t conf;
+  float32_t x;
+  float32_t y;
+  float32_t conf;
 } mpe_pp_keyPoints_t;
 
 typedef struct
 {
-	float32_t x_center;
-	float32_t y_center;
-	float32_t width;
-	float32_t height;
-	float32_t conf;
-	int32_t   class_index;
-	mpe_pp_keyPoints_t *pKeyPoints;
+  float32_t x_center;
+  float32_t y_center;
+  float32_t width;
+  float32_t height;
+  float32_t conf;
+  int32_t   class_index;
+  mpe_pp_keyPoints_t *pKeyPoints;
 } mpe_pp_outBuffer_t;
 
 typedef struct
 {
-	mpe_pp_outBuffer_t *pOutBuff;
-	int32_t nb_detect;
+  mpe_pp_outBuffer_t *pOutBuff;
+  int32_t nb_detect;
 } mpe_pp_out_t;
 
 

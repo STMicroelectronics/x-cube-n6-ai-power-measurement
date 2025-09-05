@@ -24,6 +24,7 @@
 #include <string.h>
 #include "vd55g1.h"
 #include "cmw_camera.h"
+#include "cmw_io.h"
 
 #define VD55G1_CHIP_ID 0x53354731
 
@@ -244,6 +245,8 @@ static int32_t CMW_VD55G1_Init(void *io_ctx, CMW_Sensor_Init_t *initSensor)
   int ret;
   int i;
 
+  assert(initSensor != NULL);
+
   if (((CMW_VD55G1_t *)io_ctx)->IsInitialized)
   {
     return CMW_ERROR_NONE;
@@ -256,14 +259,22 @@ static int32_t CMW_VD55G1_Init(void *io_ctx, CMW_Sensor_Init_t *initSensor)
     return CMW_ERROR_WRONG_PARAM;
   }
 
-  config.ext_clock_freq_in_hz = ((CMW_VD55G1_t *)io_ctx)->ClockInHz;
+  CMW_VD55G1_config_t default_sensor_config;
+  CMW_VD55G1_config_t *sensor_config;
+
+  CMW_VD55G1_SetDefaultSensorValues(&default_sensor_config);
+  sensor_config = initSensor->sensor_config ? (CMW_VD55G1_config_t*)(initSensor->sensor_config) : &default_sensor_config;
+
+  config.ext_clock_freq_in_hz = sensor_config->ext_clock_freq_in_hz;
+  config.out_itf.data_rate_in_mps = sensor_config->csiconfig.data_rate_in_mps;
+  config.out_itf.clock_lane_swap_enable =sensor_config->csiconfig.clock_lane_swap_enable;
+  config.out_itf.data_lane_swap_enable = sensor_config->csiconfig.data_lane_swap_enable;
+
   config.flip_mirror_mode = CMW_VD55G1_getMirrorFlipConfig(initSensor->mirrorFlip);
   config.patgen = VD55G1_PATGEN_DISABLE;
   config.flicker = VD55G1_FLICKER_FREE_NONE;
-  config.out_itf.data_rate_in_mps = VD55G1_DEFAULT_DATARATE;
-  config.out_itf.clock_lane_swap_enable = 1;
-  config.out_itf.data_lane_swap_enable = 1;
   config.awu.is_enable = 0;
+
   for (i = 0; i < VD55G1_GPIO_NB; i++)
   {
     config.gpio_ctrl[i] = VD55G1_GPIO_GPIO_IN;
@@ -277,6 +288,16 @@ static int32_t CMW_VD55G1_Init(void *io_ctx, CMW_Sensor_Init_t *initSensor)
 
   ((CMW_VD55G1_t *)io_ctx)->IsInitialized = 1;
   return CMW_ERROR_NONE;
+}
+
+void CMW_VD55G1_SetDefaultSensorValues( CMW_VD55G1_config_t *vd55g1_config)
+{
+  assert(vd55g1_config != NULL);
+
+  vd55g1_config->ext_clock_freq_in_hz = CAMERA_VD55G1_FREQ_IN_HZ; // Default clock frequency
+  vd55g1_config->csiconfig.data_rate_in_mps = VD55G1_DEFAULT_DATARATE;
+  vd55g1_config->csiconfig.clock_lane_swap_enable = 1;
+  vd55g1_config->csiconfig.data_lane_swap_enable = 1;
 }
 
 static int32_t CMW_VD55G1_Start(void *io_ctx)

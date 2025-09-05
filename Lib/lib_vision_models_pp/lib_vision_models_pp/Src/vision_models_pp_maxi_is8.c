@@ -47,13 +47,13 @@ void vision_models_maxi_p_is8ou8(int8_t *arr, uint32_t len_arr, uint32_t offset,
     uint16_t _parallelize = MIN(8,parallelize);
     vision_models_maxi_p_is8ou16(arr,len_arr,offset,maxim,_tmpIdx,_parallelize);
     maxim+=_parallelize;
-    for ( int i = 0; i < _parallelize; i++) {
+    for ( uint16_t i = 0; i < _parallelize; i++) {
       *index++ = _tmpIdx[i];
     }
     parallelize-=_parallelize;
     arr+=_parallelize*offset;
     vision_models_maxi_p_is8ou16(arr,len_arr,offset,maxim,_tmpIdx,parallelize);
-    for ( int i = 0; i < parallelize; i++) {
+    for ( uint32_t i = 0; i < parallelize; i++) {
       *index++ = _tmpIdx[i];
     }
   }
@@ -275,8 +275,6 @@ void vision_models_maxi_tr_p_is8ou32(int8_t *arr, uint32_t len_arr, uint32_t off
 {
 #ifdef VISION_MODELS_MAXI_TR_P_IS8OU32_MVE
   int8x16_t  s8x16_max_val = vdupq_n_s8(Q7_MIN);
-  uint8x16_t u8x16_max_idx = vdupq_n_u8(0);
-  uint8x16_t u8x16_max_idx_blk = vdupq_n_u8(0);
   parallelize = MIN(parallelize, 16);
   mve_pred16_t    p = vctp8q(parallelize);
 

@@ -49,7 +49,7 @@ typedef struct
 {
   pd_pp_box_t *pOutData;
   uint32_t box_nb;
-} pd_postprocess_out_t;
+} pd_pp_out_t;
 
 #ifdef __cplusplus
  }

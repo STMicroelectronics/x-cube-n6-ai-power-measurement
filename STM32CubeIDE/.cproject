@@ -94,7 +94,7 @@
 									<listOptionValue builtIn="false" value="../../Lib/Camera_Middleware/ISP_Library/evision/Lib"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.linker.option.libraries.1377455477" name="Libraries (-l)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.linker.option.libraries" valueType="libs">
-									<listOptionValue builtIn="false" value=":NetworkRuntime1010_CM55_GCC.a"/>
+									<listOptionValue builtIn="false" value=":NetworkRuntime1020_CM55_GCC.a"/>
 									<listOptionValue builtIn="false" value=":libn6-evision-awb_gcc.a"/>
 									<listOptionValue builtIn="false" value=":libn6-evision-st-ae_gcc.a"/>
 								</option>

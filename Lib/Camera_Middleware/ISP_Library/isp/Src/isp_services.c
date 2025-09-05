@@ -161,7 +161,7 @@ static void To_Shift_Multiplier(uint32_t Factor, uint8_t *pShift, uint8_t *pMult
     (*pShift)++;
   }
 
-  *pMultiplier = Val;
+  *pMultiplier = (uint8_t)Val;
 }
 
 static uint32_t From_Shift_Multiplier(uint8_t Shift, uint8_t Multiplier)
@@ -221,12 +221,12 @@ static uint8_t GetAvgStats(ISP_HandleTypeDef *hIsp, ISP_SVC_StatLocation locatio
     return 0;
   }
 
-  return ((accu * 256) + (nb_comp_pix / 2)) / nb_comp_pix;
+  return (uint8_t)(((accu * 256) + (nb_comp_pix / 2)) / nb_comp_pix);
 }
 
 static void ReadStatHistogram(ISP_HandleTypeDef *hIsp, uint32_t *histogram)
 {
-  for (uint32_t i = DCMIPP_STATEXT_MODULE1; i <= DCMIPP_STATEXT_MODULE3; i++)
+  for (uint8_t i = DCMIPP_STATEXT_MODULE1; i <= DCMIPP_STATEXT_MODULE3; i++)
   {
     HAL_DCMIPP_PIPE_GetISPAccumulatedStatisticsCounter(hIsp->hDcmipp, DCMIPP_PIPE1, i, &(histogram[i - DCMIPP_STATEXT_MODULE1]));
   }
@@ -441,7 +441,8 @@ uint8_t LuminanceFromRGBMono(uint8_t r, uint8_t g, uint8_t b)
 {
   /* Compute luminance from RGB components
    * by adding together R, G, B components for monochrome sensor */
-  return r + g + b;
+  uint32_t lum = (uint32_t)r + g + b;
+  return (uint8_t)((lum > 255)? 255 : lum);
 }
 
 /* Exported functions --------------------------------------------------------*/
@@ -618,6 +619,7 @@ ISP_StatusTypeDef ISP_SVC_ISP_SetDecimation(ISP_HandleTypeDef *hIsp, ISP_Decimat
   */
 ISP_StatusTypeDef ISP_SVC_ISP_GetDecimation(ISP_HandleTypeDef *hIsp, ISP_DecimationTypeDef *pConfig)
 {
+  UNUSED(hIsp);
   pConfig->factor = ISP_DecimationValue.factor;
 
   return ISP_OK;
@@ -651,16 +653,16 @@ ISP_StatusTypeDef ISP_SVC_ISP_SetContrast(ISP_HandleTypeDef *hIsp, ISP_ContrastT
   }
   else
   {
-    /* Concert coefficient unit from "percentage" to "6 bit" */
-    contrast.LUM_0 = (pConfig->coeff.LUM_0 * 16) / 100;
-    contrast.LUM_32 = (pConfig->coeff.LUM_32 * 16) / 100;
-    contrast.LUM_64 = (pConfig->coeff.LUM_64 * 16) / 100;
-    contrast.LUM_96 = (pConfig->coeff.LUM_96 * 16) / 100;
-    contrast.LUM_128 = (pConfig->coeff.LUM_128 * 16) / 100;
-    contrast.LUM_160 = (pConfig->coeff.LUM_160 * 16) / 100;
-    contrast.LUM_192 = (pConfig->coeff.LUM_192 * 16) / 100;
-    contrast.LUM_224 = (pConfig->coeff.LUM_224 * 16) / 100;
-    contrast.LUM_256 = (pConfig->coeff.LUM_256 * 16) / 100;
+    /* Convert coefficient unit from "percentage" to "6 bit" */
+    contrast.LUM_0 = (uint8_t)((pConfig->coeff.LUM_0 * 16) / 100);
+    contrast.LUM_32 = (uint8_t)((pConfig->coeff.LUM_32 * 16) / 100);
+    contrast.LUM_64 = (uint8_t)((pConfig->coeff.LUM_64 * 16) / 100);
+    contrast.LUM_96 = (uint8_t)((pConfig->coeff.LUM_96 * 16) / 100);
+    contrast.LUM_128 = (uint8_t)((pConfig->coeff.LUM_128 * 16) / 100);
+    contrast.LUM_160 = (uint8_t)((pConfig->coeff.LUM_160 * 16) / 100);
+    contrast.LUM_192 = (uint8_t)((pConfig->coeff.LUM_192 * 16) / 100);
+    contrast.LUM_224 = (uint8_t)((pConfig->coeff.LUM_224 * 16) / 100);
+    contrast.LUM_256 = (uint8_t)((pConfig->coeff.LUM_256 * 16) / 100);
     halStatus = HAL_DCMIPP_PIPE_SetISPCtrlContrastConfig(hIsp->hDcmipp, DCMIPP_PIPE1, &contrast);
 
     if (halStatus == HAL_OK)
@@ -826,7 +828,7 @@ ISP_StatusTypeDef ISP_SVC_ISP_GetBadPixel(ISP_HandleTypeDef *hIsp, ISP_BadPixelT
     return ISP_ERR_BADPIXEL_EINVAL;
   }
 
-  pConfig->enable = HAL_DCMIPP_PIPE_IsEnabledISPBadPixelRemoval(hIsp->hDcmipp, DCMIPP_PIPE1);
+  pConfig->enable = (uint8_t) HAL_DCMIPP_PIPE_IsEnabledISPBadPixelRemoval(hIsp->hDcmipp, DCMIPP_PIPE1);
   pConfig->strength = (uint8_t) HAL_DCMIPP_PIPE_GetISPBadPixelRemovalConfig(hIsp->hDcmipp, DCMIPP_PIPE1);
 
   halStatus = HAL_DCMIPP_PIPE_GetISPRemovedBadPixelCounter(hIsp->hDcmipp, DCMIPP_PIPE1, &pConfig->count);
@@ -899,7 +901,7 @@ ISP_StatusTypeDef ISP_SVC_ISP_GetBlackLevel(ISP_HandleTypeDef *hIsp, ISP_BlackLe
     return ISP_ERR_BLACKLEVEL_EINVAL;
   }
 
-  pConfig->enable = HAL_DCMIPP_PIPE_IsEnabledISPBlackLevelCalibration(hIsp->hDcmipp, DCMIPP_PIPE1);
+  pConfig->enable = (uint8_t) HAL_DCMIPP_PIPE_IsEnabledISPBlackLevelCalibration(hIsp->hDcmipp, DCMIPP_PIPE1);
 
   HAL_DCMIPP_PIPE_GetISPBlackLevelCalibrationConfig(hIsp->hDcmipp, DCMIPP_PIPE1, &blackLevelConfig);
 
@@ -970,7 +972,7 @@ ISP_StatusTypeDef ISP_SVC_ISP_GetGain(ISP_HandleTypeDef *hIsp, ISP_ISPGainTypeDe
     return ISP_ERR_ISPGAIN_EINVAL;
   }
 
-  pConfig->enable = HAL_DCMIPP_PIPE_IsEnabledISPExposure(hIsp->hDcmipp, DCMIPP_PIPE1);
+  pConfig->enable = (uint8_t) HAL_DCMIPP_PIPE_IsEnabledISPExposure(hIsp->hDcmipp, DCMIPP_PIPE1);
   HAL_DCMIPP_PIPE_GetISPExposureConfig(hIsp->hDcmipp, DCMIPP_PIPE1, &exposureConfig);
 
   pConfig->ispGainR = From_Shift_Multiplier(exposureConfig.ShiftRed, exposureConfig.MultiplierRed);
@@ -1060,7 +1062,7 @@ ISP_StatusTypeDef ISP_SVC_ISP_GetColorConv(ISP_HandleTypeDef *hIsp, ISP_ColorCon
     return ISP_ERR_COLORCONV_EINVAL;
   }
 
-  pConfig->enable = HAL_DCMIPP_PIPE_IsEnabledISPColorConversion(hIsp->hDcmipp, DCMIPP_PIPE1);
+  pConfig->enable = (uint8_t) HAL_DCMIPP_PIPE_IsEnabledISPColorConversion(hIsp->hDcmipp, DCMIPP_PIPE1);
 
   HAL_DCMIPP_PIPE_GetISPColorConversionConfig(hIsp->hDcmipp, DCMIPP_PIPE1, &colorConvConfig);
 
@@ -1120,7 +1122,7 @@ ISP_StatusTypeDef ISP_SVC_Sensor_SetGain(ISP_HandleTypeDef *hIsp, ISP_SensorGain
 
   if (hIsp->appliHelpers.SetSensorGain != NULL)
   {
-    if (hIsp->appliHelpers.SetSensorGain(hIsp->cameraInstance, pConfig->gain) != 0)
+    if (hIsp->appliHelpers.SetSensorGain(hIsp->cameraInstance, (int32_t)pConfig->gain) != 0)
     {
       return ISP_ERR_SENSORGAIN;
     }
@@ -1174,7 +1176,7 @@ ISP_StatusTypeDef ISP_SVC_Sensor_SetExposure(ISP_HandleTypeDef *hIsp, ISP_Sensor
 
   if (hIsp->appliHelpers.SetSensorExposure != NULL)
   {
-    if (hIsp->appliHelpers.SetSensorExposure(hIsp->cameraInstance, pConfig->exposure) != 0)
+    if (hIsp->appliHelpers.SetSensorExposure(hIsp->cameraInstance, (int32_t)pConfig->exposure) != 0)
     {
       return ISP_ERR_SENSOREXPOSURE;
     }
@@ -1231,7 +1233,7 @@ ISP_StatusTypeDef ISP_SVC_Sensor_SetTestPattern(ISP_HandleTypeDef *hIsp, ISP_Sen
     return ISP_ERR_APP_HELPER_UNDEFINED;
   }
 
-  if (hIsp->appliHelpers.SetSensorTestPattern(hIsp->cameraInstance, pConfig->mode) != 0)
+  if (hIsp->appliHelpers.SetSensorTestPattern(hIsp->cameraInstance, (int32_t)pConfig->mode) != 0)
   {
     return ISP_ERR_SENSORTESTPATTERN;
   }
@@ -1295,12 +1297,13 @@ ISP_StatusTypeDef ISP_SVC_Misc_GetFirmwareConfig(ISP_FirmwareConfigTypeDef *pCon
   uint32_t devId;
 
   /* Number of supported fields (RGBOrder, HasStatRemoval, etc..). */
-  pConfig->nbField = 7;
+  pConfig->nbField = 8;
   /* RGB Order is BGR (1) on STM32N6 and more generally on any MCU using DCMIPP HAL */
   pConfig->rgbOrder = ISP_SVC_CONFIG_ORDER_BGR;
   /* StatRemoval, GammaCorrection and AEC antiflickering support status */
   pConfig->hasStatRemoval = 1;
-  pConfig->hasGamma = 1;
+  pConfig->hasGamma = 0;
+  pConfig->hasUniqueGamma = 1;
   pConfig->hasAntiFlicker = 1;
   /* DevideId */
   switch(HAL_GetDEVID())
@@ -1535,10 +1538,10 @@ bool ISP_SVC_Misc_IsGammaEnabled(ISP_HandleTypeDef *hIsp, uint32_t Pipe)
   switch(Pipe)
   {
   case 1:
-    ret = HAL_DCMIPP_PIPE_IsEnabledGammaConversion(hIsp->hDcmipp, DCMIPP_PIPE1);
+    ret = (uint8_t) HAL_DCMIPP_PIPE_IsEnabledGammaConversion(hIsp->hDcmipp, DCMIPP_PIPE1);
     break;
   case 2:
-    ret = HAL_DCMIPP_PIPE_IsEnabledGammaConversion(hIsp->hDcmipp, DCMIPP_PIPE2);
+    ret = (uint8_t) HAL_DCMIPP_PIPE_IsEnabledGammaConversion(hIsp->hDcmipp, DCMIPP_PIPE2);
     break;
   default:
     ret = 0; /*  No gamma on pipe 0 */
@@ -1561,9 +1564,13 @@ ISP_StatusTypeDef ISP_SVC_ISP_SetGamma(ISP_HandleTypeDef *hIsp, ISP_GammaTypeDef
     return ISP_ERR_DCMIPP_GAMMA;
   }
 
-  if (pConfig->enablePipe1 == 0)
+  if (pConfig->enable == 0)
   {
     if (HAL_DCMIPP_PIPE_DisableGammaConversion(hIsp->hDcmipp, DCMIPP_PIPE1) != HAL_OK)
+    {
+      return ISP_ERR_DCMIPP_GAMMA;
+    }
+    if (HAL_DCMIPP_PIPE_DisableGammaConversion(hIsp->hDcmipp, DCMIPP_PIPE2) != HAL_OK)
     {
       return ISP_ERR_DCMIPP_GAMMA;
     }
@@ -1574,17 +1581,6 @@ ISP_StatusTypeDef ISP_SVC_ISP_SetGamma(ISP_HandleTypeDef *hIsp, ISP_GammaTypeDef
     {
       return ISP_ERR_DCMIPP_GAMMA;
     }
-  }
-
-  if (pConfig->enablePipe2 == 0)
-  {
-    if (HAL_DCMIPP_PIPE_DisableGammaConversion(hIsp->hDcmipp, DCMIPP_PIPE2) != HAL_OK)
-    {
-      return ISP_ERR_DCMIPP_GAMMA;
-    }
-  }
-  else
-  {
     if (HAL_DCMIPP_PIPE_EnableGammaConversion(hIsp->hDcmipp, DCMIPP_PIPE2) != HAL_OK)
     {
       return ISP_ERR_DCMIPP_GAMMA;
@@ -1671,6 +1667,7 @@ ISP_IQParamTypeDef *ISP_SVC_IQParam_Get(ISP_HandleTypeDef *hIsp)
   */
 void ISP_SVC_Stats_Init(ISP_HandleTypeDef *hIsp)
 {
+  UNUSED(hIsp);
   memset(&ISP_SVC_StatEngine, 0, sizeof(ISP_SVC_StatEngineTypeDef));
 }
 
@@ -1686,7 +1683,8 @@ void ISP_SVC_Stats_Gather(ISP_HandleTypeDef *hIsp)
   DCMIPP_StatisticExtractionConfTypeDef statConf[3];
   ISP_IQParamTypeDef *IQParamConfig;
   ISP_SVC_StatStateTypeDef *ongoing;
-  uint32_t i, avgR, avgG, avgB, frameId;
+  uint32_t avgR, avgG, avgB, frameId;
+  uint8_t i;
 
   /* Check handle validity */
   if (hIsp == NULL)

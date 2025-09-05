@@ -51,7 +51,7 @@ int32_t st_yolox_nms_comparator(const void *pa, const void *pb)
 }
 
 int32_t st_yolox_pp_nmsFiltering_centroid(od_pp_out_t *pOutput,
-                                          st_yolox_pp_static_param_t *pInput_static_param)
+                                          od_st_yolox_pp_static_param_t *pInput_static_param)
 {
     int32_t j, k, limit_counter, detections_per_class;
     for (k = 0; k < pInput_static_param->nb_classes; ++k)
@@ -84,6 +84,7 @@ int32_t st_yolox_pp_nmsFiltering_centroid(od_pp_out_t *pOutput,
                 float32_t *a = &(pOutput->pOutBuff[i].x_center);
                 for (j = i + 1; j < detections_per_class; j ++)
                 {
+                    if (pOutput->pOutBuff[j].conf == 0) continue;
                     float32_t *b = &(pOutput->pOutBuff[j].x_center);
                     if (vision_models_box_iou(a, b) > pInput_static_param->iou_threshold)
                     {
@@ -112,7 +113,7 @@ int32_t st_yolox_pp_nmsFiltering_centroid(od_pp_out_t *pOutput,
 
 
 int32_t st_yolox_pp_scoreFiltering_centroid(od_pp_out_t *pOutput,
-                                            st_yolox_pp_static_param_t *pInput_static_param)
+                                            od_st_yolox_pp_static_param_t *pInput_static_param)
 {
     int32_t det_count = 0;
 
@@ -135,25 +136,22 @@ int32_t st_yolox_pp_scoreFiltering_centroid(od_pp_out_t *pOutput,
 }
 
 
-
-int32_t st_yolox_pp_level_decode(float32_t *pInbuff, 
-                                 float32_t *pOutBuff,
-                                 float32_t *pAnchors,
-                                 int32_t grid_width,
-                                 int32_t grid_height,
-                                 float32_t *tmp_a,
-                                 st_yolox_pp_static_param_t *pInput_static_param)
+int32_t st_yolox_pp_level_decode_and_store(float32_t *pInbuff,
+                                           od_pp_out_t *pOutput,
+                                           float32_t *pAnchors,
+                                           int32_t grid_width,
+                                           int32_t grid_height,
+                                           od_st_yolox_pp_static_param_t *pInput_static_param)
 
 {
     int32_t el_offset    = 0;
-    int32_t count        = 0;
-    int32_t count_detect = 0;
     float32_t best_score = 0;
     uint32_t class_index;
     int32_t anch_stride = (pInput_static_param->nb_classes + AI_YOLOV2_PP_CLASSPROB);
     float32_t grid_width_inv = 1.0f / grid_width;
     float32_t grid_height_inv = 1.0f / grid_height;
-
+    int32_t det_count = pInput_static_param->nb_detect;
+    od_pp_outBuffer_t *pOutBuff = (od_pp_outBuffer_t *)pOutput->pOutBuff;
 
     if ( 1 == pInput_static_param->nb_classes) {
       float32_t computedThreshold = -logf( 1 / pInput_static_param->conf_threshold - 1);
@@ -166,18 +164,19 @@ int32_t st_yolox_pp_level_decode(float32_t *pInbuff,
             if ( pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS] >= computedThreshold) {
 
               /* read and activate objectness */
-              pOutBuff[count + AI_YOLOV2_PP_OBJECTNESS] = vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS]);
+              float32_t prob = vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS]);
 
               /* activate array of classes pred */
-              pOutBuff[count + AI_YOLOV2_PP_CLASSPROB] = pOutBuff[count + AI_YOLOV2_PP_OBJECTNESS];
 
-              pOutBuff[count + AI_YOLOV2_PP_XCENTER]   = (col + vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_XCENTER])) * grid_width_inv;
-              pOutBuff[count + AI_YOLOV2_PP_YCENTER]   = (row + vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_YCENTER])) * grid_height_inv;
-              pOutBuff[count + AI_YOLOV2_PP_WIDTHREL]  = (pAnchors[2 * anch + 0] * expf(pInbuff[el_offset + AI_YOLOV2_PP_WIDTHREL])) * grid_width_inv;
-              pOutBuff[count + AI_YOLOV2_PP_HEIGHTREL] = (pAnchors[2 * anch + 1] * expf(pInbuff[el_offset + AI_YOLOV2_PP_HEIGHTREL])) * grid_height_inv;
+              pOutBuff[det_count].conf = prob;
+              pOutBuff[det_count].class_index = 0;
 
-              count += anch_stride;
-              count_detect++;
+              pOutBuff[det_count].x_center   = (col + vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_XCENTER]))   * grid_width_inv;
+              pOutBuff[det_count].y_center   = (row + vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_YCENTER]))   * grid_height_inv;
+              pOutBuff[det_count].width      = (pAnchors[2 * anch + 0] * expf(pInbuff[el_offset + AI_YOLOV2_PP_WIDTHREL]))  * grid_width_inv;
+              pOutBuff[det_count].height     = (pAnchors[2 * anch + 1] * expf(pInbuff[el_offset + AI_YOLOV2_PP_HEIGHTREL])) * grid_height_inv;
+
+              det_count++;
             }
 
              el_offset += anch_stride;
@@ -193,40 +192,35 @@ int32_t st_yolox_pp_level_decode(float32_t *pInbuff,
           {
               for (int32_t anch = 0; anch < pInput_static_param->nb_anchors; ++anch)
               {
+                  vision_models_maxi_p_if32ou32(&pInbuff[el_offset + AI_YOLOV2_PP_CLASSPROB],
+                                              pInput_static_param->nb_classes,
+                                              anch_stride,
+                                              &best_score,
+                                              &class_index,
+                                              1);
                   /* read and activate objectness */
-                  pOutBuff[el_offset + AI_YOLOV2_PP_OBJECTNESS] = vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS]);
+                  float32_t prob = vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS]);
 
                   /* activate array of classes pred */
-                  vision_models_softmax_f(&pInbuff[el_offset + AI_YOLOV2_PP_CLASSPROB],
-                                          &pOutBuff[el_offset + AI_YOLOV2_PP_CLASSPROB],
-                                          pInput_static_param->nb_classes,
-                                          tmp_a);
-                  for (int32_t k = 0; k < pInput_static_param->nb_classes; k++)
-                  {
-                    pOutBuff[el_offset + AI_YOLOV2_PP_CLASSPROB + k] = pOutBuff[el_offset + AI_YOLOV2_PP_OBJECTNESS] *
-                                                                       pOutBuff[el_offset + AI_YOLOV2_PP_CLASSPROB + k];
+                  /* in placce softmax */
+                  float32_t sumf = 0.0;
+                  for (int _i = 0; _i < pInput_static_param->nb_classes; _i++) {
+                      sumf+= expf(pInbuff[el_offset + AI_YOLOV2_PP_CLASSPROB + _i]);
                   }
-
-                  vision_models_maxi_if32ou32(&pOutBuff[el_offset + AI_YOLOV2_PP_CLASSPROB],
-                      pInput_static_param->nb_classes,
-                      &best_score,
-                      &class_index);
+                  best_score = expf(best_score) / sumf;
+                  best_score *= prob;
 
                   if (best_score >= pInput_static_param->conf_threshold)
                   {
-                      pOutBuff[count + AI_YOLOV2_PP_OBJECTNESS] = pOutBuff[el_offset + AI_YOLOV2_PP_OBJECTNESS];
-                      for (int32_t k = 0; k < pInput_static_param->nb_classes; ++k)
-                      {
-                          pOutBuff[count + AI_YOLOV2_PP_CLASSPROB + k] = pOutBuff[el_offset + AI_YOLOV2_PP_CLASSPROB + k];
-                      }
 
-                      pOutBuff[count + AI_YOLOV2_PP_XCENTER]   = (col + vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_XCENTER])) * grid_width_inv;
-                      pOutBuff[count + AI_YOLOV2_PP_YCENTER]   = (row + vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_YCENTER])) * grid_height_inv;
-                      pOutBuff[count + AI_YOLOV2_PP_WIDTHREL]  = (pAnchors[2 * anch + 0] * expf(pInbuff[el_offset + AI_YOLOV2_PP_WIDTHREL])) * grid_width_inv;
-                      pOutBuff[count + AI_YOLOV2_PP_HEIGHTREL] = (pAnchors[2 * anch + 1] * expf(pInbuff[el_offset + AI_YOLOV2_PP_HEIGHTREL])) * grid_height_inv;
+                      pOutBuff[det_count].x_center    = (col + vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_XCENTER]))   * grid_width_inv;
+                      pOutBuff[det_count].y_center    = (row + vision_models_sigmoid_f(pInbuff[el_offset + AI_YOLOV2_PP_YCENTER]))   * grid_height_inv;
+                      pOutBuff[det_count].width       = (pAnchors[2 * anch + 0] * expf(pInbuff[el_offset + AI_YOLOV2_PP_WIDTHREL]))  * grid_width_inv;
+                      pOutBuff[det_count].height      = (pAnchors[2 * anch + 1] * expf(pInbuff[el_offset + AI_YOLOV2_PP_HEIGHTREL])) * grid_height_inv;
+                      pOutBuff[det_count].conf        = best_score;
+                      pOutBuff[det_count].class_index = class_index;
 
-                      count += anch_stride;
-                      count_detect++;
+                      det_count++;
                   }
 
                   el_offset += anch_stride;
@@ -234,103 +228,170 @@ int32_t st_yolox_pp_level_decode(float32_t *pInbuff,
           } // for col
       } // for row
     } //  else (nb_classes != 1)
-
-    return count_detect;
-
-}
-
-
-int32_t st_yolox_pp_store_detections(float32_t *pInbuff,
-                                     od_pp_out_t *pOutput,
-                                     int32_t level_count_detect,
-                                     int32_t det_count,
-                                     st_yolox_pp_static_param_t *pInput_static_param)
-{
-    int32_t anch_stride = (pInput_static_param->nb_classes + AI_YOLOV2_PP_CLASSPROB);
-
-
-    if (1 == pInput_static_param->nb_classes) {
-      for (int32_t i = 0; i < (level_count_detect * anch_stride); i += anch_stride)
-      {
-          pOutput->pOutBuff[det_count].x_center    = pInbuff[i + AI_YOLOV2_PP_XCENTER];
-          pOutput->pOutBuff[det_count].y_center    = pInbuff[i + AI_YOLOV2_PP_YCENTER];
-          pOutput->pOutBuff[det_count].width       = pInbuff[i + AI_YOLOV2_PP_WIDTHREL];
-          pOutput->pOutBuff[det_count].height      = pInbuff[i + AI_YOLOV2_PP_HEIGHTREL];
-          pOutput->pOutBuff[det_count].class_index = 0;
-          pOutput->pOutBuff[det_count].conf        = pInbuff[i + AI_YOLOV2_PP_CLASSPROB];
-          det_count++;
-      }
-    } // if nb_classes == 1
-    else
-    {
-      int32_t remaining_boxes = level_count_detect;
-      for (int32_t i = 0; i < (level_count_detect * anch_stride); i += 4*anch_stride)
-      {
-          float32_t best_score_array[4];
-          uint16_t class_index_array[4];
-          vision_models_maxi_p_if32ou16(&pInbuff[i + AI_YOLOV2_PP_CLASSPROB],
-              pInput_static_param->nb_classes,
-              anch_stride,
-              best_score_array,
-              class_index_array,
-              MIN(remaining_boxes,4));
-
-          for (int _i = 0; _i < MIN(remaining_boxes,4); _i++)
-          {
-              if (best_score_array[_i] >= pInput_static_param->conf_threshold)
-              {
-                  pOutput->pOutBuff[det_count].x_center    = pInbuff[i + _i * anch_stride + AI_YOLOV2_PP_XCENTER ];
-                  pOutput->pOutBuff[det_count].y_center    = pInbuff[i + _i * anch_stride + AI_YOLOV2_PP_YCENTER];
-                  pOutput->pOutBuff[det_count].width       = pInbuff[i + _i * anch_stride + AI_YOLOV2_PP_WIDTHREL];
-                  pOutput->pOutBuff[det_count].height      = pInbuff[i + _i * anch_stride + AI_YOLOV2_PP_HEIGHTREL];
-                  pOutput->pOutBuff[det_count].conf        = best_score_array[_i];
-                  pOutput->pOutBuff[det_count].class_index = class_index_array[_i];
-                  det_count++;
-              }
-          } // for _i
-          remaining_boxes-=4;
-      } // for i
-    } // else (nb_classes != 1=
+    pInput_static_param->nb_detect = det_count;
 
     return det_count;
 
 }
 
-int32_t st_yolox_pp_getNNBoxes_centroid(st_yolox_pp_in_t *pInput,
+int32_t st_yolox_pp_level_decode_and_store_is8(int8_t *pInbuff,
+                                               od_pp_out_t *pOutput,
+                                               float32_t *pAnchors,
+                                               int32_t grid_width,
+                                               int32_t grid_height,
+                                               od_st_yolox_pp_static_param_t *pInput_static_param,
+                                               float32_t raw_scale,
+                                               int8_t raw_zp)
+
+{
+  int32_t el_offset    = 0;
+  int32_t anch_stride = (pInput_static_param->nb_classes + AI_YOLOV2_PP_CLASSPROB);
+  float32_t grid_width_inv = 1.0f / grid_width;
+  float32_t grid_height_inv = 1.0f / grid_height;
+
+
+  int32_t det_count = pInput_static_param->nb_detect;
+  od_pp_outBuffer_t *pOutBuff = (od_pp_outBuffer_t *)pOutput->pOutBuff;
+
+  if ( 1 == pInput_static_param->nb_classes) {
+
+    float32_t computedThreshold = -logf( 1 / pInput_static_param->conf_threshold - 1);
+    int8_t threshold_s8  = (int8_t)(computedThreshold / raw_scale + 0.5 + raw_zp);
+
+    for (int32_t row = 0; row < grid_width; ++row)
+    {
+      for (int32_t col = 0; col < grid_height; ++col)
+      {
+        for (int32_t anch = 0; anch < pInput_static_param->nb_anchors; ++anch)
+        {
+          if ( pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS] >= threshold_s8) {
+
+            /* read and activate objectness */
+            float32_t dequant;
+            float32_t anchor;
+            dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS] - raw_zp) * raw_scale;
+            float32_t prob = vision_models_sigmoid_f(dequant);
+            pOutBuff[det_count].conf = prob;
+            pOutBuff[det_count].class_index = 0;
+
+            dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_XCENTER] - raw_zp) * raw_scale;
+            pOutBuff[det_count].x_center   = (col + vision_models_sigmoid_f(dequant)) * grid_width_inv;
+
+            dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_YCENTER] - raw_zp) * raw_scale;
+            pOutBuff[det_count].y_center   = (row + vision_models_sigmoid_f(dequant)) * grid_height_inv;
+
+            dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_WIDTHREL] - raw_zp) * raw_scale;
+            anchor                          = (float32_t)(pAnchors[2 * anch + 0]);
+            pOutBuff[det_count].width      = (anchor * expf(dequant)) * grid_width_inv;
+
+            dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_HEIGHTREL] - raw_zp) * raw_scale;
+            anchor                          = (float32_t)(pAnchors[2 * anch + 1]);
+            pOutBuff[det_count].height     = (anchor * expf(dequant)) * grid_height_inv;
+
+            det_count++;
+          }
+
+           el_offset += anch_stride;
+        } // for anchh
+      } // for col
+    } // for row
+  } // if nb_classes == 1
+  else
+  {
+    int8_t best_score_s8;
+    uint8_t class_index_u8;
+    float32_t best_score;
+
+
+    for (int32_t row = 0; row < grid_width; ++row)
+    {
+      for (int32_t col = 0; col < grid_height; ++col)
+      {
+        for (int32_t anch = 0; anch < pInput_static_param->nb_anchors; ++anch)
+        {
+          vision_models_maxi_p_is8ou8(&pInbuff[el_offset + AI_YOLOV2_PP_CLASSPROB],
+                                    pInput_static_param->nb_classes,
+                                    anch,
+                                    &best_score_s8,
+                                    &class_index_u8,
+                                    1);
+          /* read and activate objectness */
+          float32_t dequant;
+          dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_OBJECTNESS] - raw_zp) * raw_scale;
+          float32_t prob = vision_models_sigmoid_f(dequant);
+
+          /* activate array of classes pred */
+          /* in placce softmax */
+          float32_t sumf = 0.0;
+          for (int _i = 0; _i < pInput_static_param->nb_classes; _i++) {
+              dequant = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_CLASSPROB + _i] - raw_zp) * raw_scale;
+              sumf+= expf(dequant);
+          }
+          dequant = (float32_t)((int32_t)best_score_s8 - raw_zp) * raw_scale;
+          best_score = expf(dequant) / sumf;
+          best_score *= prob;
+
+          if (best_score >= pInput_static_param->conf_threshold)
+          {
+            float32_t anchor;
+
+            dequant                         = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_XCENTER] - raw_zp) * raw_scale;
+            pOutBuff[det_count].x_center    = (col + vision_models_sigmoid_f(dequant)) * grid_width_inv;
+
+            dequant                         = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_YCENTER] - raw_zp) * raw_scale;
+            pOutBuff[det_count].y_center    = (row + vision_models_sigmoid_f(dequant)) * grid_height_inv;
+
+            dequant                         = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_WIDTHREL] - raw_zp) * raw_scale;
+            anchor                          = (float32_t)pAnchors[2 * anch + 0];
+            pOutBuff[det_count].width       = (anchor * expf(dequant)) * grid_width_inv;
+
+            dequant                         = (float32_t)((int32_t)pInbuff[el_offset + AI_YOLOV2_PP_HEIGHTREL] - raw_zp) * raw_scale;
+            anchor                          = (float32_t)pAnchors[2 * anch + 1];
+            pOutBuff[det_count].height      = (anchor * expf(dequant)) * grid_height_inv;
+
+            pOutBuff[det_count].conf        = best_score;
+            pOutBuff[det_count].class_index = class_index_u8;
+
+            det_count++;
+          }
+
+          el_offset += anch_stride;
+        } // for anch
+      } // for col
+    } // for row
+  } //  else (nb_classes != 1)
+  pInput_static_param->nb_detect = det_count;
+
+  return det_count;
+
+}
+
+
+int32_t st_yolox_pp_getNNBoxes_centroid(od_st_yolox_pp_in_t *pInput,
                                         od_pp_out_t *pOut,
-                                        st_yolox_pp_static_param_t *pInput_static_param)
+                                        od_st_yolox_pp_static_param_t *pInput_static_param)
 {
 
     int32_t error   = AI_OD_POSTPROCESS_ERROR_NO;
 
-    int32_t count_detect_L = 0;
-    int32_t count_detect_M = 0;
-    int32_t count_detect_S = 0;
 
-    float32_t tmp_a[pInput_static_param->nb_classes];
 
     int32_t grid_width, grid_height;
     float32_t *pInbuff, *pAnchors;
-
-    //level L
-    grid_width = pInput_static_param->grid_width_L;
-    grid_height = pInput_static_param->grid_height_L;
-    pInbuff = (float32_t *)pInput->pRaw_detections_L;
-    pAnchors = (float32_t *)pInput_static_param->pAnchors_L;
-    count_detect_L = st_yolox_pp_level_decode(pInbuff, pInbuff, pAnchors, grid_width, grid_height,tmp_a,pInput_static_param);
-
-    //==============================================================================================================================================================
-    int32_t init_det_count = 0;
-    int32_t det_count_L = 0;
-    int32_t det_count_M = 0;
-    int32_t det_count_S = 0;
 
     if (pOut->pOutBuff == NULL)
     {
       pOut->pOutBuff = (od_pp_outBuffer_t *)pInput->pRaw_detections_L;
     }
 
-    det_count_L = st_yolox_pp_store_detections(pInbuff,pOut,count_detect_L,init_det_count,pInput_static_param);
+    //==============================================================================================================================================================
+
+    //level L
+    grid_width = pInput_static_param->grid_width_L;
+    grid_height = pInput_static_param->grid_height_L;
+    pInbuff = (float32_t *)pInput->pRaw_detections_L;
+    pAnchors = (float32_t *)pInput_static_param->pAnchors_L;
+    st_yolox_pp_level_decode_and_store(pInbuff, pOut, pAnchors, grid_width, grid_height, pInput_static_param);
 
     //==============================================================================================================================================================
 
@@ -339,21 +400,64 @@ int32_t st_yolox_pp_getNNBoxes_centroid(st_yolox_pp_in_t *pInput,
     grid_height = pInput_static_param->grid_height_M;
     pInbuff = (float32_t *)pInput->pRaw_detections_M;
     pAnchors = (float32_t *)pInput_static_param->pAnchors_M;
-    count_detect_M = st_yolox_pp_level_decode(pInbuff, pInbuff, pAnchors, grid_width, grid_height,tmp_a,pInput_static_param);
 
-    det_count_M = st_yolox_pp_store_detections(pInbuff,pOut,count_detect_M,det_count_L,pInput_static_param);
-
-
+    st_yolox_pp_level_decode_and_store(pInbuff, pOut, pAnchors, grid_width, grid_height, pInput_static_param);
     //level S
     grid_width = pInput_static_param->grid_width_S;
     grid_height = pInput_static_param->grid_height_S;
     pInbuff = (float32_t *)pInput->pRaw_detections_S;
     pAnchors = (float32_t *)pInput_static_param->pAnchors_S;
-    count_detect_S = st_yolox_pp_level_decode(pInbuff, pInbuff, pAnchors, grid_width, grid_height,tmp_a,pInput_static_param);
+    st_yolox_pp_level_decode_and_store(pInbuff, pOut, pAnchors, grid_width, grid_height, pInput_static_param);
 
-    det_count_S = st_yolox_pp_store_detections(pInbuff,pOut,count_detect_S,det_count_M,pInput_static_param);
+    return (error);
+}
 
-    pInput_static_param->nb_detect = det_count_S;
+int32_t st_yolox_pp_getNNBoxes_centroid_is8(od_st_yolox_pp_in_t *pInput,
+                                            od_pp_out_t *pOut,
+                                            od_st_yolox_pp_static_param_t *pInput_static_param)
+{
+
+    int32_t error   = AI_OD_POSTPROCESS_ERROR_NO;
+
+
+
+    int32_t grid_width, grid_height;
+    int8_t *pInbuff;
+    float32_t *pAnchors;
+
+  //==============================================================================================================================================================
+
+    //level L
+    float32_t scale = pInput_static_param->raw_l_scale;
+    int8_t zp = pInput_static_param->raw_l_zero_point;
+    grid_width = pInput_static_param->grid_width_L;
+    grid_height = pInput_static_param->grid_height_L;
+    pInbuff = (int8_t *)pInput->pRaw_detections_L;
+    pAnchors = (float32_t *)pInput_static_param->pAnchors_L;
+    st_yolox_pp_level_decode_and_store_is8(pInbuff, pOut, pAnchors, grid_width, grid_height,pInput_static_param, scale, zp);
+
+    //==============================================================================================================================================================
+
+    //level M
+    scale = pInput_static_param->raw_m_scale;
+    zp = pInput_static_param->raw_m_zero_point;
+    grid_width = pInput_static_param->grid_width_M;
+    grid_height = pInput_static_param->grid_height_M;
+    pInbuff = (int8_t *)pInput->pRaw_detections_M;
+    pAnchors = (float32_t *)pInput_static_param->pAnchors_M;
+
+
+    st_yolox_pp_level_decode_and_store_is8(pInbuff, pOut, pAnchors, grid_width, grid_height,pInput_static_param, scale, zp);
+
+    //level S
+    scale = pInput_static_param->raw_s_scale;
+    zp = pInput_static_param->raw_s_zero_point;
+    grid_width = pInput_static_param->grid_width_S;
+    grid_height = pInput_static_param->grid_height_S;
+    pInbuff = (int8_t *)pInput->pRaw_detections_S;
+    pAnchors = (float32_t *)pInput_static_param->pAnchors_S;
+
+    st_yolox_pp_level_decode_and_store_is8(pInbuff, pOut, pAnchors, grid_width, grid_height,pInput_static_param, scale, zp);
 
     return (error);
 }
@@ -362,7 +466,7 @@ int32_t st_yolox_pp_getNNBoxes_centroid(st_yolox_pp_in_t *pInput,
 
 /* ----------------------       Exported routines      ---------------------- */
 
-int32_t od_st_yolox_pp_reset(st_yolox_pp_static_param_t *pInput_static_param)
+int32_t od_st_yolox_pp_reset(od_st_yolox_pp_static_param_t *pInput_static_param)
 {
     /* Initializations */
     pInput_static_param->nb_detect = 0;
@@ -371,14 +475,38 @@ int32_t od_st_yolox_pp_reset(st_yolox_pp_static_param_t *pInput_static_param)
 }
 
 
-int32_t od_st_yolox_pp_process(st_yolox_pp_in_t *pInput,
+int32_t od_st_yolox_pp_process(od_st_yolox_pp_in_t *pInput,
                                od_pp_out_t *pOutput,
-                               st_yolox_pp_static_param_t *pInput_static_param)
+                               od_st_yolox_pp_static_param_t *pInput_static_param)
 {
     int32_t error   = AI_OD_POSTPROCESS_ERROR_NO;
 
     /* Call Get NN boxes first */
     error = st_yolox_pp_getNNBoxes_centroid(pInput,
+                                            pOutput,
+                                            pInput_static_param);
+    if (error != AI_OD_POSTPROCESS_ERROR_NO) return (error);
+
+    /* Then NMS */
+    error = st_yolox_pp_nmsFiltering_centroid(pOutput,
+                                              pInput_static_param);
+    if (error != AI_OD_POSTPROCESS_ERROR_NO) return (error);
+
+    /* And score re-filtering */
+    error = st_yolox_pp_scoreFiltering_centroid(pOutput,
+                                                pInput_static_param);
+
+    return (error);
+}
+
+int32_t od_st_yolox_pp_process_int8(od_st_yolox_pp_in_t *pInput,
+                                    od_pp_out_t *pOutput,
+                                    od_st_yolox_pp_static_param_t *pInput_static_param)
+{
+    int32_t error   = AI_OD_POSTPROCESS_ERROR_NO;
+
+    /* Call Get NN boxes first */
+    error = st_yolox_pp_getNNBoxes_centroid_is8(pInput,
                                             pOutput,
                                             pInput_static_param);
     if (error != AI_OD_POSTPROCESS_ERROR_NO) return (error);

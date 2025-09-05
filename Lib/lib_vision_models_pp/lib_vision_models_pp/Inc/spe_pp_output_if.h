@@ -7,8 +7,8 @@
 #  * If no LICENSE file comes with this software, it is provided AS-IS.
 #  *--------------------------------------------------------------------------------------------*/
 
-#ifndef __SPE_POSTPROCESS_OUTPUT_IF_H__
-#define __SPE_POSTPROCESS_OUTPUT_IF_H__
+#ifndef __SPE_PP_OUTPUT_IF_H__
+#define __SPE_PP_OUTPUT_IF_H__
 
 
 #ifdef __cplusplus
@@ -39,6 +39,6 @@ typedef struct
  }
 #endif
 
-#endif      /* __SPE_POSTPROCESS_OUTPUT_IF_H__  */
+#endif      /* __SPE_PP_OUTPUT_IF_H__  */
 
 

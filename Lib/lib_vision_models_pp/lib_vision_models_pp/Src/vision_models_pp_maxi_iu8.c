@@ -172,7 +172,7 @@ void vision_models_maxi_p_iu8ou8(uint8_t *arr, uint32_t len_arr, uint32_t offset
     parallelize-=_parallelize;
     arr+=_parallelize*offset;
     vision_models_maxi_p_iu8ou16(arr,len_arr,offset,maxim,_tmpIdx,parallelize);
-    for ( int i = 0; i < parallelize; i++) {
+    for (uint32_t i = 0; i < parallelize; i++) {
       *index++ = _tmpIdx[i];
     }
   }

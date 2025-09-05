@@ -28,7 +28,7 @@
 static pd_pp_box_t out_detections[AI_PD_MODEL_PP_MAX_BOXES_LIMIT];
 static pd_pp_point_t out_keyPoints[AI_PD_MODEL_PP_MAX_BOXES_LIMIT][AI_PD_MODEL_PP_NB_KEYPOINTS];
 
-int32_t app_postprocess_init(void *params_postprocess)
+int32_t app_postprocess_init(void *params_postprocess, NN_Instance_TypeDef *NN_Instance)
 {
   int32_t error;
   pd_model_pp_static_param_t *params = (pd_model_pp_static_param_t *) params_postprocess;
@@ -50,7 +50,7 @@ int32_t app_postprocess_init(void *params_postprocess)
 int32_t app_postprocess_run(void *pInput[], int nb_input, void *pOutput, void *pInput_param)
 {
   assert(nb_input == 2);
-  pd_postprocess_out_t *pPdOutput = (pd_postprocess_out_t *) pOutput;
+  pd_pp_out_t *pPdOutput = (pd_pp_out_t *) pOutput;
   pd_model_pp_in_t pp_input = {
     .pProbs = (float32_t *) pInput[0],
     .pBoxes = (float32_t *) pInput[1],

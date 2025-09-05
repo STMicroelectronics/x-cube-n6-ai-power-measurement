@@ -24,8 +24,11 @@ extern "C"
 {
 #endif
 
+#include "ll_aton_rt_user_api.h"
+
 #include "od_yolov2_pp_if.h"
 #include "od_yolov5_pp_if.h"
+#include "od_fd_blazeface_pp_if.h"
 #include "od_yolov8_pp_if.h"
 #include "od_st_yolox_pp_if.h"
 #include "od_centernet_pp_if.h"
@@ -43,21 +46,29 @@ extern "C"
 #include "sseg_deeplabv3_pp_if.h"
 #include "sseg_pp_output_if.h"
 
-#define POSTPROCESS_OD_YOLO_V2_UF       (10)  /* Yolov2 postprocessing; Input model: uint8; output: float32         */
-#define POSTPROCESS_OD_YOLO_V5_UU       (11)  /* Yolov5 postprocessing; Input model: uint8; output: uint8           */
-#define POSTPROCESS_OD_YOLO_V8_UF       (12)  /* Yolov8 postprocessing; Input model: uint8; output: float32         */
-#define POSTPROCESS_OD_YOLO_V8_UI       (13)  /* Yolov8 postprocessing; Input model: uint8; output: int8            */
-#define POSTPROCESS_OD_ST_YOLOX_UF      (14)  /* ST YoloX postprocessing; Input model: uint8; output: float32       */
-#define POSTPROCESS_OD_ST_SSD_UF        (15)  /* ST SSD postprocessing; Input model: uint8; output: float32         */
-#define POSTPROCESS_MPE_YOLO_V8_UF      (20)  /* Yolov8 postprocessing; Input model: uint8; output: float32         */
-#define POSTPROCESS_MPE_PD_UF           (21)  /* Palm detector postprocessing; Input model: uint8; output: float32  */
-#define POSTPROCESS_SPE_MOVENET_UF      (22)  /* Movenet postprocessing; Input model: uint8; output: float32        */
-#define POSTPROCESS_ISEG_YOLO_V8_UI     (30)  /* Yolov8 Seg postprocessing; Input model: uint8; output: int8        */
-#define POSTPROCESS_SSEG_DEEPLAB_V3_UF  (40)  /* Deeplabv3 Seg postprocessing; Input model: uint8; output: float32  */
-#define POSTPROCESS_CUSTOM              (100) /* Custom post processing which needs to be implemented by user       */
+#define POSTPROCESS_OD_YOLO_V2_UF       (100)  /* Yolov2 postprocessing; Input model: uint8; output: float32         */
+#define POSTPROCESS_OD_YOLO_V2_UI       (101)  /* Yolov2 postprocessing; Input model: uint8; output: int8            */
+#define POSTPROCESS_OD_YOLO_V5_UU       (102)  /* Yolov5 postprocessing; Input model: uint8; output: uint8           */
+#define POSTPROCESS_OD_YOLO_V8_UF       (103)  /* Yolov8 postprocessing; Input model: uint8; output: float32         */
+#define POSTPROCESS_OD_YOLO_V8_UI       (104)  /* Yolov8 postprocessing; Input model: uint8; output: int8            */
+#define POSTPROCESS_OD_ST_YOLOX_UF      (105)  /* ST YoloX postprocessing; Input model: uint8; output: float32       */
+#define POSTPROCESS_OD_ST_YOLOX_UI      (106)  /* ST YoloX postprocessing; Input model: uint8; output: int8          */
+#define POSTPROCESS_OD_ST_SSD_UF        (107)  /* ST SSD postprocessing; Input model: uint8; output: float32         */
+#define POSTPROCESS_OD_FD_BLAZEFACE_UF  (110)  /* blazeface postprocessing; Input model: uint8; output: float32      */
+#define POSTPROCESS_OD_FD_BLAZEFACE_UU  (111)  /* blazeface postprocessing; Input model: uint8; output: uint8        */
+#define POSTPROCESS_OD_FD_BLAZEFACE_UI  (112)  /* blazeface postprocessing; Input model: uint8; output: int8         */
+#define POSTPROCESS_MPE_YOLO_V8_UF      (200)  /* Yolov8 postprocessing; Input model: uint8; output: float32         */
+#define POSTPROCESS_MPE_YOLO_V8_UI      (201)  /* Yolov8 postprocessing; Input model: uint8; output: int8            */
+#define POSTPROCESS_MPE_PD_UF           (202)  /* Palm detector postprocessing; Input model: uint8; output: float32  */
+#define POSTPROCESS_SPE_MOVENET_UF      (203)  /* Movenet postprocessing; Input model: uint8; output: float32        */
+#define POSTPROCESS_SPE_MOVENET_UI      (204)  /* Movenet postprocessing; Input model: uint8; output: int8           */
+#define POSTPROCESS_ISEG_YOLO_V8_UI     (300)  /* Yolov8 Seg postprocessing; Input model: uint8; output: int8        */
+#define POSTPROCESS_SSEG_DEEPLAB_V3_UF  (400)  /* Deeplabv3 Seg postprocessing; Input model: uint8; output: float32  */
+#define POSTPROCESS_SSEG_DEEPLAB_V3_UI  (401)  /* Deeplabv3 Seg postprocessing; Input model: uint8; output: int8     */
+#define POSTPROCESS_CUSTOM              (1000) /* Custom post processing which needs to be implemented by user       */
 
 /* Exported functions ------------------------------------------------------- */
-int32_t app_postprocess_init(void *params_postprocess);
+int32_t app_postprocess_init(void *params_postprocess, NN_Instance_TypeDef *NN_Instance);
 int32_t app_postprocess_run(void *pInput[], int nb_input, void *pOutput, void *pInput_param);
 
 #ifdef __cplusplus

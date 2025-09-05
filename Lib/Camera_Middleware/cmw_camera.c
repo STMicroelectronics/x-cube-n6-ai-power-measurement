@@ -55,7 +55,7 @@ typedef struct
 } CAMERA_Ctx_t;
 
 CMW_CameraInit_t  camera_conf;
-CMW_Sensor_Name_t detected_sensor;
+CMW_Sensor_Name_t connected_sensor;
 CAMERA_Ctx_t  Camera_Ctx;
 
 DCMIPP_HandleTypeDef hcamera_dcmipp;
@@ -111,11 +111,11 @@ int32_t CMW_CAMERA_SetPipeConfig(uint32_t pipe, CMW_DCMIPP_Conf_t *p_conf, uint3
 int32_t CMW_CAMERA_GetSensorName(CMW_Sensor_Name_t *sensorName)
 {
   int32_t ret = CMW_ERROR_NONE;
-  CMW_Sensor_Init_t initValues;
+  CMW_Sensor_Init_t initValues = {0};
 
   if (is_camera_init != 0)
   {
-    *sensorName = detected_sensor;
+    *sensorName = connected_sensor;
     return CMW_ERROR_NONE;
   }
 
@@ -124,6 +124,7 @@ int32_t CMW_CAMERA_GetSensorName(CMW_Sensor_Name_t *sensorName)
   initValues.fps = 30;
   initValues.pixel_format = DCMIPP_PIXEL_PACKER_FORMAT_RGB565_1;
   initValues.mirrorFlip = CMW_MIRRORFLIP_NONE;
+  initValues.sensor_config = NULL;
 
   /* Set DCMIPP instance */
   hcamera_dcmipp.Instance = DCMIPP;
@@ -143,12 +144,12 @@ int32_t CMW_CAMERA_GetSensorName(CMW_Sensor_Name_t *sensorName)
 
   CMW_CAMERA_EnableGPIOs();
 
-  ret = CMW_CAMERA_Probe_Sensor(&initValues, &detected_sensor);
+  ret = CMW_CAMERA_Probe_Sensor(&initValues, &connected_sensor);
   if (ret != CMW_ERROR_NONE)
   {
     return CMW_ERROR_UNKNOWN_COMPONENT;
   }
-  *sensorName = detected_sensor;
+  *sensorName = connected_sensor;
   return CMW_ERROR_NONE;
 }
 
@@ -210,7 +211,6 @@ static int CMW_CAMERA_Probe_Sensor(CMW_Sensor_Init_t *initValues, CMW_Sensor_Nam
     return ret;
   }
 #endif
-
 #if defined(USE_VD66GY_SENSOR)
   ret = CMW_CAMERA_VD66GY_Init(initValues);
   if (ret == CMW_ERROR_NONE)
@@ -237,13 +237,14 @@ static int CMW_CAMERA_Probe_Sensor(CMW_Sensor_Init_t *initValues, CMW_Sensor_Nam
 
 /**
   * @brief  Initializes the camera.
-  * @param  initConf  Camera sensor requested config
+  * @param  initConf  Mandatory: General camera config
+  * @param  sensor_config  Optional: Sensor specific configuration
   * @retval CMW status
   */
-int32_t CMW_CAMERA_Init(CMW_CameraInit_t *initConf)
+int32_t CMW_CAMERA_Init(CMW_CameraInit_t *initConf, CMW_Sensor_Config_t *sensor_config)
 {
   int32_t ret = CMW_ERROR_NONE;
-  CMW_Sensor_Init_t initValues;
+  CMW_Sensor_Init_t initValues = {0};
   ISP_SensorInfoTypeDef info = {0};
 
   initValues.width = initConf->width;
@@ -252,9 +253,15 @@ int32_t CMW_CAMERA_Init(CMW_CameraInit_t *initConf)
   initValues.pixel_format = initConf->pixel_format;
   initValues.mirrorFlip = initConf->mirror_flip;
 
-  if (is_camera_init != 0)
+  if ((sensor_config != NULL) && (sensor_config->selected_sensor != CMW_NOTKNOWN_Sensor))
   {
-    return CMW_ERROR_NONE;
+    connected_sensor = sensor_config->selected_sensor; // Assume The sensor is the one selected by the application. Check during probe
+    initValues.sensor_config = (void *) &sensor_config->config;
+  }
+  else
+  {
+    connected_sensor = CMW_NOTKNOWN_Sensor;
+    initValues.sensor_config = NULL;
   }
 
   /* Set DCMIPP instance */
@@ -275,7 +282,7 @@ int32_t CMW_CAMERA_Init(CMW_CameraInit_t *initConf)
 
   CMW_CAMERA_EnableGPIOs();
 
-  ret = CMW_CAMERA_Probe_Sensor(&initValues, &detected_sensor);
+  ret = CMW_CAMERA_Probe_Sensor(&initValues, &connected_sensor);
   if (ret != CMW_ERROR_NONE)
   {
     return CMW_ERROR_UNKNOWN_COMPONENT;
@@ -943,7 +950,6 @@ static int32_t CMW_CAMERA_VD55G1_Init( CMW_Sensor_Init_t *initSensors_params)
 
   memset(&camera_bsp, 0, sizeof(camera_bsp));
   camera_bsp.vd55g1_bsp.Address     = CAMERA_VD55G1_ADDRESS;
-  camera_bsp.vd55g1_bsp.ClockInHz   = CAMERA_VD55G1_FREQ_IN_HZ;
   camera_bsp.vd55g1_bsp.Init        = CMW_I2C_INIT;
   camera_bsp.vd55g1_bsp.DeInit      = CMW_I2C_DEINIT;
   camera_bsp.vd55g1_bsp.WriteReg    = CMW_I2C_WRITEREG16;
@@ -955,6 +961,12 @@ static int32_t CMW_CAMERA_VD55G1_Init( CMW_Sensor_Init_t *initSensors_params)
   ret = CMW_VD55G1_Probe(&camera_bsp.vd55g1_bsp, &Camera_Drv);
   if (ret != CMW_ERROR_NONE)
   {
+    return CMW_ERROR_COMPONENT_FAILURE;
+  }
+
+  if ((connected_sensor != CMW_VD55G1_Sensor) && (connected_sensor != CMW_NOTKNOWN_Sensor))
+  {
+    /* If the selected sensor in the application side has selected a different sensors than VD55G1 */
     return CMW_ERROR_COMPONENT_FAILURE;
   }
 
@@ -1014,7 +1026,6 @@ static int32_t CMW_CAMERA_VD66GY_Init( CMW_Sensor_Init_t *initSensors_params)
 
   memset(&camera_bsp, 0, sizeof(camera_bsp));
   camera_bsp.vd66gy_bsp.Address     = CAMERA_VD66GY_ADDRESS;
-  camera_bsp.vd66gy_bsp.ClockInHz   = CAMERA_VD66GY_FREQ_IN_HZ;
   camera_bsp.vd66gy_bsp.Init        = CMW_I2C_INIT;
   camera_bsp.vd66gy_bsp.DeInit      = CMW_I2C_DEINIT;
   camera_bsp.vd66gy_bsp.ReadReg     = CMW_I2C_READREG16;
@@ -1032,6 +1043,12 @@ static int32_t CMW_CAMERA_VD66GY_Init( CMW_Sensor_Init_t *initSensors_params)
   ret = CMW_VD66GY_Probe(&camera_bsp.vd66gy_bsp, &Camera_Drv);
   if (ret != CMW_ERROR_NONE)
   {
+    return CMW_ERROR_COMPONENT_FAILURE;
+  }
+
+  if ((connected_sensor != CMW_VD66GY_Sensor) && (connected_sensor != CMW_NOTKNOWN_Sensor))
+  {
+    /* If the selected sensor in the application side has selected a different sensors than VD66GY */
     return CMW_ERROR_COMPONENT_FAILURE;
   }
 
@@ -1109,6 +1126,12 @@ static int32_t CMW_CAMERA_IMX335_Init(CMW_Sensor_Init_t *initSensors_params)
   ret = CMW_IMX335_Probe(&camera_bsp.imx335_bsp, &Camera_Drv);
   if (ret != CMW_ERROR_NONE)
   {
+    return CMW_ERROR_COMPONENT_FAILURE;
+  }
+
+  if ((connected_sensor != CMW_IMX335_Sensor) && (connected_sensor != CMW_NOTKNOWN_Sensor))
+  {
+    /* If the selected sensor in the application side has selected a different sensors than IMX335 */
     return CMW_ERROR_COMPONENT_FAILURE;
   }
 
@@ -1341,3 +1364,31 @@ static int32_t CMW_CAMERA_SetPipe(DCMIPP_HandleTypeDef *hdcmipp, uint32_t pipe, 
   return HAL_OK;
 }
 
+int32_t CMW_CAMERA_SetDefaultSensorValues( CMW_Sensor_Config_t *sensor_config )
+{
+  if (sensor_config == NULL)
+  {
+    return CMW_ERROR_WRONG_PARAM;
+  }
+  switch (sensor_config->selected_sensor)
+  {
+#if defined(USE_VD66GY_SENSOR)
+  case CMW_VD66GY_Sensor:
+    CMW_VD66GY_SetDefaultSensorValues(&sensor_config->config.vd66gy_config);
+    break;
+#endif
+#if defined(USE_VD55G1_SENSOR)
+  case CMW_VD55G1_Sensor:
+    CMW_VD55G1_SetDefaultSensorValues(&sensor_config->config.vd55g1_config);
+    break;
+#endif
+#if defined(USE_IMX335_SENSOR)
+case CMW_IMX335_Sensor:
+#endif
+  default:
+    return CMW_ERROR_WRONG_PARAM;
+    break;
+  }
+
+  return CMW_ERROR_NONE;
+}

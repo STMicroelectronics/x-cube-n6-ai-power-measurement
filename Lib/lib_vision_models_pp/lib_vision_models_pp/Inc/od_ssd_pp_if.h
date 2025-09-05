@@ -21,25 +21,32 @@
 /* ------------------------------------ */
 typedef struct ssd_pp_in_centroid
 {
-	float32_t *pBoxes;
-	float32_t *pAnchors;
-	float32_t *pScores;
-} ssd_pp_in_centroid_t;
+  void *pBoxes;
+  void *pAnchors;
+  void *pScores;
+} od_ssd_pp_in_centroid_t;
 
 
 /* Generic Static parameters */
 /* ------------------------- */
 typedef struct ssd_pp_static_param
 {
-	int32_t   nb_classes;
-	int32_t   nb_detections;
-	float32_t XY_scale;
-	float32_t WH_scale;
-	int32_t   max_boxes_limit;
-	float32_t	conf_threshold;
-	float32_t	iou_threshold;
-	int32_t   nb_detect;
-} ssd_pp_static_param_t;
+  int32_t   nb_classes;
+  int32_t   nb_detections;
+  float32_t XY_scale;
+  float32_t WH_scale;
+  int32_t   max_boxes_limit;
+  float32_t conf_threshold;
+  float32_t iou_threshold;
+  int32_t   nb_detect;
+  void *scratchBuffer;
+  float32_t boxe_scale;
+  float32_t anchor_scale;
+  float32_t score_scale;
+  int8_t boxe_zero_point;
+  int8_t anchor_zero_point;
+  int8_t score_zero_point;
+} od_ssd_pp_static_param_t;
 
 
 /* Exported functions ------------------------------------------------------- */
@@ -50,21 +57,21 @@ typedef struct ssd_pp_static_param
  * @param [IN] Input static parameters
  * @retval Error code
  */
-int32_t od_ssd_pp_reset(ssd_pp_static_param_t *pInput_static_param);
+int32_t od_ssd_pp_reset(od_ssd_pp_static_param_t *pInput_static_param);
 
 
 /*!
  * @brief Object detector post processing : includes output detector remapping,
  *        nms and score filtering for SSD.
  *
- * @param [IN] Pointer on input data
- *             Pointer on output data
+ * @param [IN] Pointer on input structure pointing data
+ *             Pointer on output structure pointing data
  *             pointer on static parameters
  * @retval Error code
  */
-int32_t od_ssd_pp_process(ssd_pp_in_centroid_t *pInput,
+int32_t od_ssd_pp_process(od_ssd_pp_in_centroid_t *pInput,
                           od_pp_out_t *pOutput,
-                          ssd_pp_static_param_t *pInput_static_param);
+                          od_ssd_pp_static_param_t *pInput_static_param);
 
 #ifdef __cplusplus
  }

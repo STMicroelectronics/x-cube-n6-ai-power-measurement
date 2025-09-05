@@ -83,8 +83,8 @@ static float pd_pp_compute_iou(pd_pp_box_t *box0, pd_pp_box_t *box1)
   return intersect_area / (area[0] + area[1] - intersect_area);
 }
 static int32_t pd_pp_decode(pd_model_pp_in_t *pInput,
-                                     pd_postprocess_out_t *pOutput,
-                                     pd_model_pp_static_param_t *pInput_static_param) {
+                            pd_pp_out_t *pOutput,
+                            pd_model_pp_static_param_t *pInput_static_param) {
 
   pOutput->box_nb = 0;
 
@@ -96,13 +96,14 @@ static int32_t pd_pp_decode(pd_model_pp_in_t *pInput,
   float32_t *pAnchors = (float32_t *)pInput_static_param->pAnchors;
   const size_t in_struct_size = (2 * pInput_static_param->nb_keypoints) + AI_PD_MODEL_PP_KEYPOINTS;// CEN TBD
   size_t box_nb = 0;
+  float32_t computedThreshold = -logf( 1 / pInput_static_param->conf_threshold - 1);
 
   for (uint32_t i = 0; i < pInput_static_param->nb_total_boxes; i++) {
     pd_pp_box_t *pBox = &pBoxes[box_nb]; //&pd_boxes[box_nb];
 
     /* decode prob */
-    pBox->prob = 1.0f / (1.0f + expf(-pRawProbs[i]));
-    if (pBox->prob >= pInput_static_param->conf_threshold) {
+    if (pRawProbs[i] >= computedThreshold) {
+      pBox->prob = 1.0f / (1.0f + expf(-pRawProbs[i]));
       /* decode palm box */
       pBox->x_center = (pAnchors[i*2+0] * width  + pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_XCENTER]) / width;
       pBox->y_center = (pAnchors[i*2+1] * height + pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_YCENTER]) / height;
@@ -113,6 +114,75 @@ static int32_t pd_pp_decode(pd_model_pp_in_t *pInput,
       for (uint32_t j = 0; j < pInput_static_param->nb_keypoints; j++) {
         pBox->pKps[j].x = (pAnchors[i*2+0] * width  + pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_KEYPOINTS + (2 * j) + 0]) / width;
         pBox->pKps[j].y = (pAnchors[i*2+1] * height + pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_KEYPOINTS + (2 * j) + 1]) / height;
+     }
+
+      box_nb++;
+      if (box_nb >= pInput_static_param->max_boxes_limit) {
+        break;
+      }
+    }
+  }
+
+  pOutput->box_nb = box_nb;
+  return AI_PD_POSTPROCESS_ERROR_NO;
+}
+
+static int32_t pd_pp_decode_int8(pd_model_pp_in_t *pInput,
+                            pd_pp_out_t *pOutput,
+                            pd_model_pp_static_param_t *pInput_static_param) {
+
+  pOutput->box_nb = 0;
+
+  pd_pp_box_t *pBoxes = (pd_pp_box_t *)pOutput->pOutData;
+  float32_t width  = pInput_static_param->width;
+  float32_t height = pInput_static_param->height;
+  int8_t *pRawBoxes = (int8_t *)pInput->pBoxes;
+  int8_t *pRawProbs = (int8_t *)pInput->pProbs;
+  float32_t *pAnchors  = (float32_t *)pInput_static_param->pAnchors;
+
+  float32_t boxe_scale = pInput_static_param->boxe_scale;
+  float32_t proba_scale = pInput_static_param->proba_scale;
+  int8_t boxe_zp = pInput_static_param->boxe_zp;
+  int8_t proba_zp = pInput_static_param->proba_zp;
+
+  const size_t in_struct_size = (2 * pInput_static_param->nb_keypoints) + AI_PD_MODEL_PP_KEYPOINTS;
+  size_t box_nb = 0;
+  float32_t computedThreshold = -logf( 1.0f / pInput_static_param->conf_threshold - 1);
+  int8_t threshold_s8  = (int8_t)(computedThreshold / proba_scale + 0.5 + proba_zp);
+
+  for (uint32_t i = 0; i < pInput_static_param->nb_total_boxes; i++) {
+    pd_pp_box_t *pBox = &pBoxes[box_nb]; //&pd_boxes[box_nb];
+
+    /* decode prob */
+    if (pRawProbs[i] >= threshold_s8) {
+      float32_t value = (float32_t)((int32_t)pRawProbs[i] - proba_zp) * proba_scale;
+      pBox->prob = 1.0f / (1.0f + expf(-value));
+      /* decode palm box */
+      float32_t anchor_x, anchor_y;
+
+      value = (float32_t)((int32_t)pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_XCENTER] - boxe_zp) * boxe_scale;
+      anchor_x = pAnchors[i*2+0];
+
+      pBox->x_center = (anchor_x * width  + value) / width;
+
+      value = (float32_t)((int32_t)pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_YCENTER] - boxe_zp) * boxe_scale;
+      anchor_y = pAnchors[i*2+1];
+
+      pBox->y_center = (anchor_y * height + value) / height;
+
+      value = (float32_t)((int32_t)pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_WIDTHREL] - boxe_zp) * boxe_scale;
+      pBox->width = value  / width;
+
+      value = (float32_t)((int32_t)pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_HEIGHTREL] - boxe_zp) * boxe_scale;
+      pBox->height = value / height;
+
+      /* decode keypoints */
+      for (uint32_t j = 0; j < pInput_static_param->nb_keypoints; j++) {
+        value = (float32_t)((int32_t)pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_KEYPOINTS + (2 * j) + 0] - boxe_zp) * boxe_scale;
+        pBox->pKps[j].x = (anchor_x * width  + value) / width;
+
+        value = (float32_t)((int32_t)pRawBoxes[i * in_struct_size + AI_PD_MODEL_PP_KEYPOINTS + (2 * j) + 1] - boxe_zp) * boxe_scale;
+        pBox->pKps[j].y = (anchor_y * height + value) / height;
       }
 
       box_nb++;
@@ -126,7 +196,7 @@ static int32_t pd_pp_decode(pd_model_pp_in_t *pInput,
   return AI_PD_POSTPROCESS_ERROR_NO;
 }
 
-static int pd_pp_nms(pd_postprocess_out_t *pOutput,
+static int pd_pp_nms(pd_pp_out_t *pOutput,
                      pd_model_pp_static_param_t *pInput_static_param)
 {
   int hand_nb = 0;
@@ -163,7 +233,7 @@ int32_t pd_model_pp_reset(pd_model_pp_static_param_t *pInput_static_param)
 
 
 int32_t pd_model_pp_process(pd_model_pp_in_t *pInput,
-                            pd_postprocess_out_t *pOutput,
+                            pd_pp_out_t *pOutput,
                             pd_model_pp_static_param_t *pInput_static_param)
 {
   int32_t ret = AI_PD_POSTPROCESS_ERROR;
@@ -179,3 +249,22 @@ int32_t pd_model_pp_process(pd_model_pp_in_t *pInput,
 
   return ret;
 }
+
+int32_t pd_model_pp_process_int8(pd_model_pp_in_t *pInput,
+                            pd_pp_out_t *pOutput,
+                            pd_model_pp_static_param_t *pInput_static_param)
+{
+  int32_t ret = AI_PD_POSTPROCESS_ERROR;
+  ret = pd_pp_decode_int8(pInput,
+                          pOutput,
+                          pInput_static_param);
+
+  if (AI_PD_POSTPROCESS_ERROR_NO != ret) {
+    return ret;
+  }
+  pd_pp_nms(pOutput,
+            pInput_static_param);
+
+  return ret;
+}
+

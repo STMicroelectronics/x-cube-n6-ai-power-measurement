@@ -35,6 +35,7 @@ typedef struct
   int fps;
   uint32_t pixel_format;
   uint32_t mirrorFlip;
+  void *sensor_config; /* to pass specific config from application side*/
 } CMW_Sensor_Init_t;
 
 typedef struct

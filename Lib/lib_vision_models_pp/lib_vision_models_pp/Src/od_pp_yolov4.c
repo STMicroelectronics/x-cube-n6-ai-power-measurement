@@ -15,6 +15,17 @@
 /* Can't be removed if qsort is not re-written... */
 static int32_t AI_YOLOV4_PP_SORT_CLASS;
 
+typedef struct
+{
+	int8_t  x_center;
+	int8_t  y_center;
+	int8_t  width;
+	int8_t  height;
+	int8_t  conf;
+	uint8_t class_index;
+} od_yolov4_pp_scratch_s8_t;
+
+
 
 int32_t yolov4_nms_comparator(const void *pa, const void *pb)
 {
@@ -52,8 +63,8 @@ int32_t yolov4_nms_comparator(const void *pa, const void *pb)
 
 int32_t yolov4_nms_comparator_is8(const void *pa, const void *pb)
 {
-    od_pp_outBuffer_s8_t a = *(od_pp_outBuffer_s8_t *)pa;
-    od_pp_outBuffer_s8_t b = *(od_pp_outBuffer_s8_t *)pb;
+    od_yolov4_pp_scratch_s8_t a = *(od_yolov4_pp_scratch_s8_t *)pa;
+    od_yolov4_pp_scratch_s8_t b = *(od_yolov4_pp_scratch_s8_t *)pb;
 
     int16_t diff = 0;
     int8_t a_weighted_conf = INT8_MIN;
@@ -86,7 +97,7 @@ int32_t yolov4_nms_comparator_is8(const void *pa, const void *pb)
 
 
 int32_t yolov4_pp_nmsFiltering_centroid(od_pp_out_t *pOutput,
-                                        yolov4_pp_static_param_t *pInput_static_param)
+                                        od_yolov4_pp_static_param_t *pInput_static_param)
 {
     int32_t j, k, limit_counter, detections_per_class;
 
@@ -151,8 +162,8 @@ int32_t yolov4_pp_nmsFiltering_centroid(od_pp_out_t *pOutput,
     return (AI_OD_POSTPROCESS_ERROR_NO);
 }
 
-int32_t yolov4_pp_nmsFiltering_centroid_is8(od_pp_outBuffer_s8_t *ptrScratch,
-                                            yolov4_pp_static_param_t *pInput_static_param)
+int32_t yolov4_pp_nmsFiltering_centroid_is8(od_yolov4_pp_scratch_s8_t *ptrScratch,
+                                            od_yolov4_pp_static_param_t *pInput_static_param)
 {
   int32_t j, k, limit_counter, detections_per_class;
 
@@ -177,7 +188,7 @@ int32_t yolov4_pp_nmsFiltering_centroid_is8(od_pp_outBuffer_s8_t *ptrScratch,
       /* Sorts detections based on class k */
       qsort(ptrScratch,
             pInput_static_param->nb_detect,
-            sizeof(od_pp_outBuffer_s8_t),
+            sizeof(od_yolov4_pp_scratch_s8_t),
             yolov4_nms_comparator_is8);
 
       for (int32_t i = 0; i < detections_per_class ; i ++)
@@ -188,7 +199,7 @@ int32_t yolov4_pp_nmsFiltering_centroid_is8(od_pp_outBuffer_s8_t *ptrScratch,
         {
           if (ptrScratch[j].conf == INT8_MIN) continue;
           int8_t *b = &(ptrScratch[j].x_center);
-          float32_t iou = vision_models_box_iou_is8(a, b, pInput_static_param->raw_output_zero_point);
+          float32_t iou = vision_models_box_iou_is8(a, b, pInput_static_param->boxe_zero_point);
 
           if ( iou > pInput_static_param->iou_threshold)
           {
@@ -200,7 +211,7 @@ int32_t yolov4_pp_nmsFiltering_centroid_is8(od_pp_outBuffer_s8_t *ptrScratch,
         /* Limits detections count */
         for (int32_t i = 0; i < detections_per_class; i++)
         {
-           if ((limit_counter < pInput_static_param->max_boxes_limit) &&
+          if ((limit_counter < pInput_static_param->max_boxes_limit) &&
               (ptrScratch[i].conf != INT8_MIN))
           {
             limit_counter++;
@@ -217,7 +228,7 @@ int32_t yolov4_pp_nmsFiltering_centroid_is8(od_pp_outBuffer_s8_t *ptrScratch,
 }
 
 int32_t yolov4_pp_scoreFiltering_centroid(od_pp_out_t *pOutput,
-                                          yolov4_pp_static_param_t *pInput_static_param)
+                                          od_yolov4_pp_static_param_t *pInput_static_param)
 {
   od_pp_outBuffer_t *pOutBuff = pOutput->pOutBuff;
   int32_t det_count = 0;
@@ -240,25 +251,27 @@ int32_t yolov4_pp_scoreFiltering_centroid(od_pp_out_t *pOutput,
   return (AI_OD_POSTPROCESS_ERROR_NO);
 }
 
-int32_t yolov4_pp_scoreFiltering_centroid_is8(od_pp_outBuffer_s8_t *ptrScratch,
+int32_t yolov4_pp_scoreFiltering_centroid_is8(od_yolov4_pp_scratch_s8_t *ptrScratch,
                                               od_pp_out_t *pOutput,
-                                              yolov4_pp_static_param_t *pInput_static_param)
+                                              od_yolov4_pp_static_param_t *pInput_static_param)
 {
-    int8_t zero_point        = pInput_static_param->raw_output_zero_point;
-    float32_t scale          = pInput_static_param->raw_output_scale;
-    int8_t conf_threshold_s8 = (int8_t)(pInput_static_param->conf_threshold / scale + 0.5f) + zero_point;
+    const int8_t proba_zp = pInput_static_param->proba_zero_point;
+    const float32_t proba_scale = pInput_static_param->proba_scale;
+    const int8_t boxe_zp = pInput_static_param->boxe_zero_point;
+    const float32_t boxe_scale = pInput_static_param->boxe_scale;
+    int8_t conf_threshold_s8 = (int8_t)(pInput_static_param->conf_threshold / proba_scale + 0.5f) + proba_zp;
 
     od_pp_outBuffer_t *pOutBuff = pOutput->pOutBuff;
-    int32_t det_count        = 0;
+    int32_t det_count           = 0;
     for (int32_t i = 0; i < pInput_static_param->nb_detect; i++)
     {
         if (ptrScratch[i].conf >= conf_threshold_s8)
         {
-            pOutBuff[det_count].x_center    = scale * (float32_t)((int32_t)ptrScratch[i].x_center - (int32_t)zero_point);
-            pOutBuff[det_count].y_center    = scale * (float32_t)((int32_t)ptrScratch[i].y_center - (int32_t)zero_point);
-            pOutBuff[det_count].width       = scale * (float32_t)((int32_t)ptrScratch[i].width    - (int32_t)zero_point);
-            pOutBuff[det_count].height      = scale * (float32_t)((int32_t)ptrScratch[i].height   - (int32_t)zero_point);
-            pOutBuff[det_count].conf        = scale * (float32_t)((int32_t)ptrScratch[i].conf     - (int32_t)zero_point);
+            pOutBuff[det_count].x_center    = boxe_scale * (float32_t)((int32_t)ptrScratch[i].x_center - (int32_t)boxe_zp);
+            pOutBuff[det_count].y_center    = boxe_scale * (float32_t)((int32_t)ptrScratch[i].y_center - (int32_t)boxe_zp);
+            pOutBuff[det_count].width       = boxe_scale * (float32_t)((int32_t)ptrScratch[i].width    - (int32_t)boxe_zp);
+            pOutBuff[det_count].height      = boxe_scale * (float32_t)((int32_t)ptrScratch[i].height   - (int32_t)boxe_zp);
+            pOutBuff[det_count].conf        = proba_scale * (float32_t)((int32_t)ptrScratch[i].conf     - (int32_t)proba_zp);
             pOutBuff[det_count].class_index = (int32_t)ptrScratch[i].class_index;
             det_count++;
         }
@@ -268,9 +281,9 @@ int32_t yolov4_pp_scoreFiltering_centroid_is8(od_pp_outBuffer_s8_t *ptrScratch,
     return (AI_OD_POSTPROCESS_ERROR_NO);
 }
 
-int32_t yolov4_pp_getNNBoxes_centroid(yolov4_pp_in_centroid_t *pInput,
+int32_t yolov4_pp_getNNBoxes_centroid(od_yolov4_pp_in_centroid_t *pInput,
                                       od_pp_out_t *pOutput,
-                                      yolov4_pp_static_param_t *pInput_static_param)
+                                      od_yolov4_pp_static_param_t *pInput_static_param)
 {
     int32_t error                = AI_OD_POSTPROCESS_ERROR_NO;
     const int32_t nb_classes     = pInput_static_param->nb_classes;
@@ -302,7 +315,7 @@ int32_t yolov4_pp_getNNBoxes_centroid(yolov4_pp_in_centroid_t *pInput,
               float32_t y_max = pRaw_boxes[i + _i + AI_YOLOV4_PP_YMAX   * nb_total_boxes];
 
               pOutBuff[nb_detect].x_center    = (x_max + x_min) /2;
-              pOutBuff[nb_detect].y_center    = (y_max + y_min) /2;;
+              pOutBuff[nb_detect].y_center    = (y_max + y_min) /2;
               pOutBuff[nb_detect].width       = x_max - x_min;
               pOutBuff[nb_detect].height      = y_max - y_min;
               pOutBuff[nb_detect].conf        = best_score_array[_i];
@@ -317,20 +330,22 @@ int32_t yolov4_pp_getNNBoxes_centroid(yolov4_pp_in_centroid_t *pInput,
     return (error);
 }
 
-int32_t yolov4_pp_getNNBoxes_centroid_int8(yolov4_pp_in_centroid_t *pInput,
+int32_t yolov4_pp_getNNBoxes_centroid_int8(od_yolov4_pp_in_centroid_t *pInput,
                                            od_pp_out_t *pOutput,
-                                           yolov4_pp_static_param_t *pInput_static_param)
+                                           od_yolov4_pp_static_param_t *pInput_static_param)
 {
     int32_t error          = AI_OD_POSTPROCESS_ERROR_NO;
     int32_t nb_classes     = pInput_static_param->nb_classes;
     int32_t nb_total_boxes = pInput_static_param->nb_total_boxes;
     int8_t *pRaw_boxes     = (int8_t *)pInput->pRaw_boxes;
     int8_t *pRaw_probas    = (int8_t *)pInput->pRaw_probas;
-    int8_t zero_point      = pInput_static_param->raw_output_zero_point;
-    float32_t scale        = pInput_static_param->raw_output_scale;
+    const int8_t proba_zp = pInput_static_param->proba_zero_point;
+    const float32_t proba_scale = pInput_static_param->proba_scale;
+    const int8_t boxe_zp = pInput_static_param->boxe_zero_point;
+    const float32_t boxe_scale = pInput_static_param->boxe_scale;
 
     int32_t remaining_boxes  = nb_total_boxes;
-    int8_t conf_threshold_s8 = (int8_t)(pInput_static_param->conf_threshold / scale) + zero_point;
+    int8_t conf_threshold_s8 = (int8_t)(pInput_static_param->conf_threshold / proba_scale) + proba_zp;
 
     od_pp_outBuffer_t *pOutBuff = pOutput->pOutBuff;
     int32_t nb_detect = 0;
@@ -348,12 +363,12 @@ int32_t yolov4_pp_getNNBoxes_centroid_int8(yolov4_pp_in_centroid_t *pInput,
             for (int _i = 0; _i < ((remaining_boxes>16)?16:remaining_boxes); _i++) {
 
                 if ( best_score_array[_i] >= conf_threshold_s8) {
-                  float32_t best_score_f = scale * (float32_t)(best_score_array[_i] - zero_point);
+                  float32_t best_score_f = proba_scale * (float32_t)(best_score_array[_i] - proba_zp);
 
-                  float32_t x_min = scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_XMIN * nb_total_boxes] - (int32_t)zero_point);
-                  float32_t x_max = scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_XMAX * nb_total_boxes] - (int32_t)zero_point);
-                  float32_t y_min = scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_YMIN * nb_total_boxes] - (int32_t)zero_point);
-                  float32_t y_max = scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_YMAX * nb_total_boxes] - (int32_t)zero_point);
+                  float32_t x_min = boxe_scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_XMIN * nb_total_boxes] - (int32_t)boxe_zp);
+                  float32_t x_max = boxe_scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_XMAX * nb_total_boxes] - (int32_t)boxe_zp);
+                  float32_t y_min = boxe_scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_YMIN * nb_total_boxes] - (int32_t)boxe_zp);
+                  float32_t y_max = boxe_scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_YMAX * nb_total_boxes] - (int32_t)boxe_zp);
 
                   pOutBuff[nb_detect].x_center    = (x_max + x_min) /2;
                   pOutBuff[nb_detect].y_center    = (y_max + y_min) /2;;
@@ -382,12 +397,12 @@ int32_t yolov4_pp_getNNBoxes_centroid_int8(yolov4_pp_in_centroid_t *pInput,
             for (int _i = 0; _i < ((remaining_boxes>16)?16:remaining_boxes); _i++) {
                 if ( best_score_array[_i] >= conf_threshold_s8)
                 {
-                  float32_t  best_score_f = scale * (float32_t)(best_score_array[_i] - zero_point);
+                  float32_t  best_score_f = proba_scale * (float32_t)(best_score_array[_i] - proba_zp);
 
-                  float32_t x_min = scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_XMIN   * nb_total_boxes] - (int32_t)zero_point);
-                  float32_t x_max = scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_XMAX   * nb_total_boxes] - (int32_t)zero_point);
-                  float32_t y_min = scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_YMIN   * nb_total_boxes] - (int32_t)zero_point);
-                  float32_t y_max = scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_YMAX   * nb_total_boxes] - (int32_t)zero_point);
+                  float32_t x_min = boxe_scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_XMIN   * nb_total_boxes] - (int32_t)boxe_zp);
+                  float32_t x_max = boxe_scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_XMAX   * nb_total_boxes] - (int32_t)boxe_zp);
+                  float32_t y_min = boxe_scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_YMIN   * nb_total_boxes] - (int32_t)boxe_zp);
+                  float32_t y_max = boxe_scale * (float32_t)((int32_t)pRaw_boxes[i + _i + AI_YOLOV4_PP_YMAX   * nb_total_boxes] - (int32_t)boxe_zp);
 
                   pOutBuff[nb_detect].x_center    = (x_max + x_min) /2;
                   pOutBuff[nb_detect].y_center    = (y_max + y_min) /2;
@@ -410,21 +425,22 @@ int32_t yolov4_pp_getNNBoxes_centroid_int8(yolov4_pp_in_centroid_t *pInput,
     return (error);
 }
 
-int32_t yolov4_pp_getNNBoxes_centroid_is8os8(yolov4_pp_in_centroid_t *pInput,
-                                             od_pp_outBuffer_s8_t *ptrScratch,
-                                             yolov4_pp_static_param_t *pInput_static_param)
+int32_t yolov4_pp_getNNBoxes_centroid_is8os8(od_yolov4_pp_in_centroid_t *pInput,
+                                             od_yolov4_pp_scratch_s8_t *ptrScratch,
+                                             od_yolov4_pp_static_param_t *pInput_static_param)
 {
     int32_t error   = AI_OD_POSTPROCESS_ERROR_NO;
     const int32_t nb_classes = pInput_static_param->nb_classes;
     int32_t nb_total_boxes = pInput_static_param->nb_total_boxes;
     int8_t *pRaw_boxes = (int8_t *)pInput->pRaw_boxes;
     int8_t *pRaw_probas = (int8_t *)pInput->pRaw_probas;
-    const int8_t zero_point = pInput_static_param->raw_output_zero_point;
-    const float32_t scale = pInput_static_param->raw_output_scale;
+    const int8_t proba_zp = pInput_static_param->proba_zero_point;
+    const float32_t proba_scale = pInput_static_param->proba_scale;
+    const int8_t boxe_zp = pInput_static_param->boxe_zero_point;
 
     pInput_static_param->nb_detect =0;
     int32_t remaining_boxes = nb_total_boxes;
-    const int8_t conf_threshold_s8 = (int8_t)(pInput_static_param->conf_threshold / scale + 0.5f) + zero_point;
+    const int8_t conf_threshold_s8 = (int8_t)(pInput_static_param->conf_threshold / proba_scale + 0.5f) + proba_zp;
     int32_t nb_detect = 0;
 
     int8_t best_score_array[16];
@@ -441,15 +457,15 @@ int32_t yolov4_pp_getNNBoxes_centroid_is8os8(yolov4_pp_in_centroid_t *pInput,
         for (int _i = 0; _i < ((remaining_boxes>16)?16:remaining_boxes); _i++) {
 
             if ( best_score_array[_i] >= conf_threshold_s8) {
-              float32_t x_min = pRaw_boxes[i + _i + AI_YOLOV4_PP_XMIN * nb_total_boxes];
-              float32_t x_max = pRaw_boxes[i + _i + AI_YOLOV4_PP_XMAX * nb_total_boxes];
-              float32_t y_min = pRaw_boxes[i + _i + AI_YOLOV4_PP_YMIN * nb_total_boxes];
-              float32_t y_max = pRaw_boxes[i + _i + AI_YOLOV4_PP_YMAX * nb_total_boxes];
+              int8_t x_min = pRaw_boxes[i + _i + AI_YOLOV4_PP_XMIN * nb_total_boxes];
+              int8_t x_max = pRaw_boxes[i + _i + AI_YOLOV4_PP_XMAX * nb_total_boxes];
+              int8_t y_min = pRaw_boxes[i + _i + AI_YOLOV4_PP_YMIN * nb_total_boxes];
+              int8_t y_max = pRaw_boxes[i + _i + AI_YOLOV4_PP_YMAX * nb_total_boxes];
 
               ptrScratch[nb_detect].x_center    = (x_max + x_min) / 2;
               ptrScratch[nb_detect].y_center    = (y_max + y_min) / 2;
-              ptrScratch[nb_detect].width       = x_max - x_min + zero_point;
-              ptrScratch[nb_detect].height      = y_max - y_min + zero_point;
+              ptrScratch[nb_detect].width       = x_max - x_min + boxe_zp;
+              ptrScratch[nb_detect].height      = y_max - y_min + boxe_zp;
 
               ptrScratch[nb_detect].conf        = best_score_array[_i];
               ptrScratch[nb_detect].class_index = class_index_array[_i];
@@ -464,7 +480,7 @@ int32_t yolov4_pp_getNNBoxes_centroid_is8os8(yolov4_pp_in_centroid_t *pInput,
 
 /* ----------------------       Exported routines      ---------------------- */
 
-int32_t od_yolov4_pp_reset(yolov4_pp_static_param_t *pInput_static_param)
+int32_t od_yolov4_pp_reset(od_yolov4_pp_static_param_t *pInput_static_param)
 {
     /* Initializations */
     pInput_static_param->nb_detect = 0;
@@ -473,9 +489,9 @@ int32_t od_yolov4_pp_reset(yolov4_pp_static_param_t *pInput_static_param)
 }
 
 
-int32_t od_yolov4_pp_process(yolov4_pp_in_centroid_t *pInput,
-                                    od_pp_out_t *pOutput,
-                                    yolov4_pp_static_param_t *pInput_static_param)
+int32_t od_yolov4_pp_process(od_yolov4_pp_in_centroid_t *pInput,
+                             od_pp_out_t *pOutput,
+                             od_yolov4_pp_static_param_t *pInput_static_param)
 {
     int32_t error   = AI_OD_POSTPROCESS_ERROR_NO;
 
@@ -498,27 +514,29 @@ int32_t od_yolov4_pp_process(yolov4_pp_in_centroid_t *pInput,
 }
 
 
-int32_t od_yolov4_pp_process_int8(yolov4_pp_in_centroid_t *pInput,
+int32_t od_yolov4_pp_process_int8(od_yolov4_pp_in_centroid_t *pInput,
                                   od_pp_out_t *pOutput,
-                                  yolov4_pp_static_param_t *pInput_static_param)
+                                  od_yolov4_pp_static_param_t *pInput_static_param)
 {
   int32_t error = AI_OD_POSTPROCESS_ERROR_NO;
-  od_pp_outBuffer_s8_t *ptrScratch = pInput_static_param->pScratchBuff;
+  od_yolov4_pp_scratch_s8_t *ptrScratch = pInput_static_param->pScratchBuff;
 
   if ((NULL == ptrScratch) && (pInput_static_param->nb_classes < UINT8_MAX) ){
-      ptrScratch = (od_pp_outBuffer_s8_t *)&pOutput->pOutBuff[pInput_static_param->nb_total_boxes];
-      ptrScratch -= pInput_static_param->nb_total_boxes;
+    if ((pInput_static_param->nb_classes * sizeof(int8_t)) > sizeof(od_yolov4_pp_scratch_s8_t)) {
+      ptrScratch = (od_yolov4_pp_scratch_s8_t *)pInput->pRaw_probas;
+    }
   }
+
   if (ptrScratch) {
     /* Call Get NN boxes first */
     error = yolov4_pp_getNNBoxes_centroid_is8os8(pInput,
-                                                ptrScratch,
-                                                pInput_static_param);
+                                                 ptrScratch,
+                                                 pInput_static_param);
     if (error != AI_OD_POSTPROCESS_ERROR_NO) return (error);
 
     /* Then NMS */
     error = yolov4_pp_nmsFiltering_centroid_is8(ptrScratch,
-                                                  pInput_static_param);
+                                                pInput_static_param);
     if (error != AI_OD_POSTPROCESS_ERROR_NO) return (error);
 
     /* And score re-filtering */
@@ -528,8 +546,8 @@ int32_t od_yolov4_pp_process_int8(yolov4_pp_in_centroid_t *pInput,
   } else {
     /* Call Get NN boxes first */
     error = yolov4_pp_getNNBoxes_centroid_int8(pInput,
-                                              pOutput,
-                                              pInput_static_param);
+                                               pOutput,
+                                               pInput_static_param);
     if (error != AI_OD_POSTPROCESS_ERROR_NO) return (error);
 
     /* Then NMS */

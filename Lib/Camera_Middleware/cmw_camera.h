@@ -41,10 +41,42 @@ extern "C" {
 
 
 typedef enum {
-  CMW_VD66GY_Sensor = 0x0,
+  CMW_NOTKNOWN_Sensor = 0x0,
+  CMW_VD66GY_Sensor,
   CMW_IMX335_Sensor,
   CMW_VD55G1_Sensor,
 } CMW_Sensor_Name_t;
+
+typedef struct
+{
+  int ext_clock_freq_in_hz;
+  int line_len;
+  struct {
+    int datalane_nb;
+    int clock_lane_swap_enable;
+    int data_lane0_swap_enable;
+    int data_lane1_swap_enable;
+    int data_lanes_mapping_swap_enable;
+  } csiconfig;
+} CMW_VD66GY_config_t;
+
+typedef struct
+{
+  int ext_clock_freq_in_hz;
+  struct {
+    int data_rate_in_mps;
+    int clock_lane_swap_enable;
+    int data_lane_swap_enable;
+  } csiconfig;
+} CMW_VD55G1_config_t;
+
+typedef struct {
+  CMW_Sensor_Name_t selected_sensor;
+  union {
+    CMW_VD66GY_config_t vd66gy_config;
+    CMW_VD55G1_config_t vd55g1_config;
+  } config;
+} CMW_Sensor_Config_t;
 
 typedef enum {
   CMW_Aspect_ratio_crop = 0x0,
@@ -86,17 +118,30 @@ typedef struct {
 
 
 /* Camera exposure mode
- * Some cameras embed their own Auto Exposure algorithm.
- * The following defines allow the user to chose the exposure mode of the camera.
- * Camera exposure mode has no impact if the camera does not support it.
- */
+* Some cameras embed their own Auto Exposure algorithm.
+* The following defines allow the user to chose the exposure mode of the camera.
+* Camera exposure mode has no impact if the camera does not support it.
+*/
 #define CMW_EXPOSUREMODE_AUTO          0x00U   /* Start the camera auto exposure functionnality */
 #define CMW_EXPOSUREMODE_AUTOFREEZE    0x01U   /* Stop the camera auto exposure functionnality and freeze the current value */
 #define CMW_EXPOSUREMODE_MANUAL        0x02U   /* Set the camera in manual exposure (exposure is control by a software algorithm) */
 
 DCMIPP_HandleTypeDef* CMW_CAMERA_GetDCMIPPHandle();
 
-int32_t CMW_CAMERA_Init( CMW_CameraInit_t *init_conf );
+/**
+  * @brief  Initializes the camera.
+  * @param  initConf  Mandatory: General camera config
+  * @param  sensor_config  Optional: Sensor specific configuration; NULL if you want to let CMW configure for you
+  * @retval CMW status
+  */
+int32_t CMW_CAMERA_Init(CMW_CameraInit_t *init_conf, CMW_Sensor_Config_t *sensor_config);
+
+/**
+ * @brief  Fill the sensor configuration structure with default values.
+ * @param  sensor_config  Pointer to the sensor configuration structure
+ * @retval CMW status
+ */
+int32_t CMW_CAMERA_SetDefaultSensorValues(CMW_Sensor_Config_t *sensor_config);
 int32_t CMW_CAMERA_DeInit();
 int32_t CMW_CAMERA_Run();
 int32_t CMW_CAMERA_SetPipeConfig(uint32_t pipe, CMW_DCMIPP_Conf_t *p_conf, uint32_t *pitch);

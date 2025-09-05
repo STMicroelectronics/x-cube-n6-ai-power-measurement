@@ -138,7 +138,7 @@ void CAM_Init(void)
   cam_conf.anti_flicker = 0;
   cam_conf.mirror_flip = CAMERA_FLIP;
 
-  ret = CMW_CAMERA_Init(&cam_conf);
+  ret = CMW_CAMERA_Init(&cam_conf, NULL);
   assert(ret == CMW_ERROR_NONE);
   DCMIPP_PipeInitDisplay(&cam_conf);
   DCMIPP_PipeInitNn();

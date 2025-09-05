@@ -28,8 +28,8 @@
 /* I/O structures for model PD type */
 typedef struct pd_model_pp_in
 {
-  float32_t *pProbs;
-  float32_t *pBoxes;
+  void *pProbs;
+  void *pBoxes;
 } pd_model_pp_in_t;
 
 typedef struct pd_model_static_param {
@@ -41,14 +41,44 @@ typedef struct pd_model_static_param {
   uint32_t nb_total_boxes;
   uint32_t max_boxes_limit;
   pd_pp_point_t *pAnchors;
+  float32_t boxe_scale;
+  float32_t proba_scale;
+  int8_t boxe_zp;
+  int8_t proba_zp;
 } pd_model_pp_static_param_t;
 
 
+/*!
+ * @brief Resets person detect CNN post processing
+ *
+ * @param [IN] Input static parameters
+ * @retval Error code
+ */
 int32_t pd_model_pp_reset(pd_model_pp_static_param_t *pInput_static_param);
 
+/*!
+ * @brief person detect CNN float32_t post processing
+ *
+ * @param [IN] Pointer on input structure
+ *             Pointer on output structure
+ *             pointer on static parameters
+ * @retval Error code
+ */
 int32_t pd_model_pp_process(pd_model_pp_in_t *pInput,
-                        pd_postprocess_out_t *pOutput,
-                        pd_model_pp_static_param_t *pInput_static_param);
+                            pd_pp_out_t *pOutput,
+                            pd_model_pp_static_param_t *pInput_static_param);
+
+/*!
+ * @brief person detect CNN int8_t post processing
+ *
+ * @param [IN] Pointer on input structure
+ *             Pointer on output structure
+ *             pointer on static parameters
+ * @retval Error code
+ */
+int32_t pd_model_pp_process_int8(pd_model_pp_in_t *pInput,
+                                 pd_pp_out_t *pOutput,
+                                 pd_model_pp_static_param_t *pInput_static_param);
 
 
 #ifdef __cplusplus

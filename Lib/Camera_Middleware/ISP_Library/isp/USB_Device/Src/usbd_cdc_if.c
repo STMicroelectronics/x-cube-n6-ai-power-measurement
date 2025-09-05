@@ -84,6 +84,9 @@ static int8_t CDC_DeInit(void)
   */
 static int8_t CDC_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
+  UNUSED(pbuf);
+  UNUSED(length);
+
   switch(cmd)
   {
     case CDC_SEND_ENCAPSULATED_COMMAND:
@@ -224,7 +227,7 @@ static int8_t CDC_TransmitCplt(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
    */
   for (uint32_t i = 0 ; i < 10000 ; i++);
 
-  return result;
+  return (int8_t)result;
 }
 
 uint32_t USB_CDC_Send_Wrapper_Function(uint8_t* buffer, uint32_t size)

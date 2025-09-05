@@ -27,7 +27,7 @@
 #include "app_fuseprogramming.h"
 #include "stm32_lcd_ex.h"
 #include "app_postprocess.h"
-#include "ll_aton_runtime.h"
+#include "ll_aton_rt_user_api.h"
 #include "app_cam.h"
 #include "main.h"
 #include "stm32n6xx_hal_rif.h"
@@ -100,13 +100,13 @@ CLASSES_TABLE;
 #define MAX_NUMBER_OUTPUT 5
 
 #if POSTPROCESS_TYPE == POSTPROCESS_OD_YOLO_V2_UF
- yolov2_pp_static_param_t pp_params;
+ od_yolov2_pp_static_param_t pp_params;
 #elif POSTPROCESS_TYPE == POSTPROCESS_OD_YOLO_V5_UU
- yolov5_pp_static_param_t pp_params;
+ od_yolov5_pp_static_param_t pp_params;
 #elif POSTPROCESS_TYPE == POSTPROCESS_OD_YOLO_V8_UF
- yolov8_pp_static_param_t pp_params;
+ od_yolov8_pp_static_param_t pp_params;
 #elif POSTPROCESS_TYPE == POSTPROCESS_OD_YOLO_V8_UI
-yolov8_pp_static_param_t pp_params;
+ od_yolov8_pp_static_param_t pp_params;
 #else
   #error "PostProcessing type not supported"
 #endif
@@ -150,7 +150,7 @@ static void nn_inference(void);
 static void postProcessing(void);
 static void sendTimestamp(void);
 static void deInitIPs(void);
-
+static void Run_Inference(void);
 /**
   * @brief  Main program
   * @param  None
@@ -199,7 +199,7 @@ int main(void)
   Security_Config();
   IAC_Config();
 
-  nn_out_info = LL_ATON_Output_Buffers_Info_Default();
+  nn_out_info = LL_ATON_Output_Buffers_Info(&NN_Instance_Default);
 
   /* Count number of outputs */
   while (nn_out_info[number_output].name != NULL)
@@ -214,7 +214,7 @@ int main(void)
     nn_out_len[i] = LL_Buffer_len(&nn_out_info[i]);
   }
 
-  app_postprocess_init(&pp_params);
+  app_postprocess_init(&pp_params, &NN_Instance_Default);
 
   /*** App Loop ***************************************************************/
   while (1)
@@ -385,7 +385,7 @@ static void runInference_freqScaling(void)
     pwr_timestamp_log("config npu clock scaling");
 
     HAL_SuspendTick();
-    LL_ATON_RT_Main(&NN_Instance_Default);
+    Run_Inference();
     HAL_ResumeTick();
     pwr_timestamp_log(frequencySteps[i].stepName);
   }
@@ -418,23 +418,28 @@ static void nn_inference(void)
   externMem_config();
 
   /* use capture buffer as nn_input buffer */
-  nn_in_info = LL_ATON_Input_Buffers_Info_Default();
+  nn_in_info = LL_ATON_Input_Buffers_Info(&NN_Instance_Default);
   uint32_t nn_in_len = LL_Buffer_len(&nn_in_info[0]);
   /* Note that we don't need to clean/invalidate those input buffers since they are only access in hardware */
   ret = LL_ATON_Set_User_Input_Buffer_Default(0, nn_in_buffer, nn_in_len);
   assert(ret == LL_ATON_User_IO_NOERROR);
+
+  /* Initialize Cube.AI/ATON and model instance */
+  LL_ATON_RT_RuntimeInit();
+  LL_ATON_RT_Init_Network(&NN_Instance_Default);
+
   pwr_timestamp_log("NPU and NPU Rams config");
 
 #if(NPU_FRQ_SCALING == 0)
   /* run NN inference (dry run)*/
   HAL_SuspendTick();
-  LL_ATON_RT_Main(&NN_Instance_Default);
+  Run_Inference();
   HAL_ResumeTick();
   pwr_timestamp_log("nn inference (dry run)");
 
   /* run NN inference */
   HAL_SuspendTick();
-  LL_ATON_RT_Main(&NN_Instance_Default);
+  Run_Inference();
   HAL_ResumeTick();
   pwr_timestamp_log("nn inference");
 #else
@@ -770,6 +775,24 @@ static void Console_Config(void)
   {
     while (1);
   }
+}
+
+static void Run_Inference(void)
+{
+  LL_ATON_RT_RetValues_t ll_aton_rt_ret;
+
+  do
+  {
+    ll_aton_rt_ret = LL_ATON_RT_RunEpochBlock(&NN_Instance_Default);
+
+    /* Wait for next event */
+    if (ll_aton_rt_ret == LL_ATON_RT_WFE)
+    {
+      LL_ATON_OSAL_WFE();
+    }
+  } while (ll_aton_rt_ret != LL_ATON_RT_DONE);
+
+  LL_ATON_RT_Reset_Network(&NN_Instance_Default);
 }
 
 #ifdef  USE_FULL_ASSERT

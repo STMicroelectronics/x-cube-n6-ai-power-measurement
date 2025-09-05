@@ -105,91 +105,94 @@ int32_t sseg_deeplabv3_pp_argmax(sseg_deeplabv3_pp_in_t *pInput,
   int32_t error   = AI_SSEG_POSTPROCESS_ERROR_NO;
   uint32_t nb_classes = pInput_static_param->nb_classes;
 
-  switch (pInput_static_param->type) {
-  case AI_SSEG_DATA_FLOAT:
+  float32_t *pSrc = (float32_t *)pInput->pRawData;
+  int32_t loop = pInput_static_param->width * pInput_static_param->height;
+  float32_t _maxim_a[4];
+  if (nb_classes < 256) {
+    uint8_t *out = (uint8_t *)pOutput->pOutBuff;
+    while(loop > 0)
     {
-      float32_t *pSrc = (float32_t *)pInput->pRawData;
-      int32_t loop = pInput_static_param->width * pInput_static_param->height;
-      float32_t _maxim_a[4];
-      if (nb_classes < 256) {
-        uint8_t *out = (uint8_t *)pOutput->pOutBuff;
-        while(loop > 0)
-        {
-            vision_models_maxi_p_if32ou8(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
-            pSrc+= 4*nb_classes;
-            out += 4;
-            loop-=4;
-        }
-      } else {
-        uint16_t *out = (uint16_t *)pOutput->pOutBuff;
-        while(loop > 0)
-        {
-            vision_models_maxi_p_if32ou16(pSrc, nb_classes, nb_classes, _maxim_a, (uint16_t *)out, loop);
-            pSrc+= 4*nb_classes;
-            out += 4;
-            loop-=4;
-        }
-      }
+        vision_models_maxi_p_if32ou8(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
+        pSrc+= 4*nb_classes;
+        out += 4;
+        loop-=4;
     }
-    break;
-  case AI_SSEG_DATA_UINT8:
+  } else {
+    uint16_t *out = (uint16_t *)pOutput->pOutBuff;
+    while(loop > 0)
     {
-      uint8_t *pSrc = (uint8_t *)pInput->pRawData;
-      int32_t loop = pInput_static_param->width * pInput_static_param->height;
-      uint8_t _maxim_a[16];
-      if (nb_classes < UCHAR_MAX) {
-        uint8_t *out = (uint8_t *)pOutput->pOutBuff;
-        while(loop > 0)
-        {
-            vision_models_maxi_p_iu8ou8(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
-            pSrc+=16*nb_classes;
-            out +=16;
-            loop-=16;
-        }
-      } else {
-        uint16_t *out = (uint16_t *)pOutput->pOutBuff;
-        while(loop > 0)
-        {
-            vision_models_maxi_p_iu8ou16(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
-           pSrc+=8*nb_classes;
-            out +=8;
-            loop-=8;
-        }
-      }
+        vision_models_maxi_p_if32ou16(pSrc, nb_classes, nb_classes, _maxim_a, (uint16_t *)out, loop);
+        pSrc+= 4*nb_classes;
+        out += 4;
+        loop-=4;
     }
-    break;
-  case AI_SSEG_DATA_INT8:
-    {
-      int8_t *pSrc = (int8_t *)pInput->pRawData;
-      int32_t loop = pInput_static_param->width * pInput_static_param->height;
-      int8_t _maxim_a[16];
-      if (nb_classes < UCHAR_MAX) {
-        uint8_t *out = (uint8_t *)pOutput->pOutBuff;
-        while(loop > 0)
-        {
-            vision_models_maxi_p_is8ou8(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
-            pSrc+=16*nb_classes;
-            out +=16;
-            loop-=16;
-        }
-      } else {
-        uint16_t *out = (uint16_t *)pOutput->pOutBuff;
-        while(loop > 0)
-        {
-            vision_models_maxi_p_is8ou16(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
-            pSrc+=8*nb_classes;
-            out +=8;
-            loop-=8;
-        }
-      }
-    }
-    break;
-  default:
-    error = AI_SSEG_POSTPROCESS_ERROR;
   }
   return error;
 }
 
+int32_t sseg_deeplabv3_pp_argmax_uint8(sseg_deeplabv3_pp_in_t *pInput,
+                                       sseg_pp_out_t          *pOutput,
+                                       sseg_deeplabv3_pp_static_param_t *pInput_static_param)
+{
+  int32_t error   = AI_SSEG_POSTPROCESS_ERROR_NO;
+  uint32_t nb_classes = pInput_static_param->nb_classes;
+
+  uint8_t *pSrc = (uint8_t *)pInput->pRawData;
+  int32_t loop = pInput_static_param->width * pInput_static_param->height;
+  uint8_t _maxim_a[16];
+  if (nb_classes < UCHAR_MAX) {
+    uint8_t *out = (uint8_t *)pOutput->pOutBuff;
+    while(loop > 0)
+    {
+        vision_models_maxi_p_iu8ou8(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
+        pSrc+=16*nb_classes;
+        out +=16;
+        loop-=16;
+    }
+  } else {
+    uint16_t *out = (uint16_t *)pOutput->pOutBuff;
+    while(loop > 0)
+    {
+        vision_models_maxi_p_iu8ou16(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
+       pSrc+=8*nb_classes;
+        out +=8;
+        loop-=8;
+    }
+  }
+  return error;
+}
+
+int32_t sseg_deeplabv3_pp_argmax_int8(sseg_deeplabv3_pp_in_t *pInput,
+                                      sseg_pp_out_t          *pOutput,
+                                      sseg_deeplabv3_pp_static_param_t *pInput_static_param)
+{
+  int32_t error   = AI_SSEG_POSTPROCESS_ERROR_NO;
+  uint32_t nb_classes = pInput_static_param->nb_classes;
+
+  int8_t *pSrc = (int8_t *)pInput->pRawData;
+  int32_t loop = pInput_static_param->width * pInput_static_param->height;
+  int8_t _maxim_a[16];
+  if (nb_classes < UCHAR_MAX) {
+    uint8_t *out = (uint8_t *)pOutput->pOutBuff;
+    while(loop > 0)
+    {
+        vision_models_maxi_p_is8ou8(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
+        pSrc+=16*nb_classes;
+        out +=16;
+        loop-=16;
+    }
+  } else {
+    uint16_t *out = (uint16_t *)pOutput->pOutBuff;
+    while(loop > 0)
+    {
+        vision_models_maxi_p_is8ou16(pSrc, nb_classes, nb_classes, _maxim_a, out, loop);
+        pSrc+=8*nb_classes;
+        out +=8;
+        loop-=8;
+    }
+  }
+  return error;
+}
 #if 0 // Not used
 int32_t sseg_deeplabv3_pp_apply_color_map(sseg_deeplabv3_pp_in_t *pInput,
                                           sseg_pp_out_t *pOutput,
@@ -279,4 +282,31 @@ int32_t sseg_deeplabv3_pp_process(sseg_deeplabv3_pp_in_t *pInput,
     return (error);
 }
 
+int32_t sseg_deeplabv3_pp_process_uint8(sseg_deeplabv3_pp_in_t *pInput,
+                                        sseg_pp_out_t *pOutput,
+                                        sseg_deeplabv3_pp_static_param_t *pInput_static_param)
+{
+  int32_t error   = AI_SSEG_POSTPROCESS_ERROR_NO;
+
+  /* Call argmax */
+  error = sseg_deeplabv3_pp_argmax_uint8(pInput,
+                                   pOutput,
+                                   pInput_static_param);
+
+    return (error);
+}
+
+int32_t sseg_deeplabv3_pp_process_int8(sseg_deeplabv3_pp_in_t *pInput,
+                                        sseg_pp_out_t *pOutput,
+                                        sseg_deeplabv3_pp_static_param_t *pInput_static_param)
+{
+  int32_t error   = AI_SSEG_POSTPROCESS_ERROR_NO;
+
+  /* Call argmax */
+  error = sseg_deeplabv3_pp_argmax_int8(pInput,
+                                        pOutput,
+                                        pInput_static_param);
+
+    return (error);
+}
 

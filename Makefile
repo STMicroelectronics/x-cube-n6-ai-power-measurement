@@ -218,7 +218,7 @@ CFLAGS += -std=gnu11
 LDSCRIPT = STM32CubeIDE/STM32N657xx.ld
 
 # libraries
-LIBS = -lc -lm -lnosys -l:NetworkRuntime1010_CM55_GCC.a -ln6-evision-awb_gcc -ln6-evision-st-ae_gcc
+LIBS = -lc -lm -lnosys -l:NetworkRuntime1020_CM55_GCC.a -ln6-evision-awb_gcc -ln6-evision-st-ae_gcc
 LIBDIR = -LLib/AI_Runtime/Lib/GCC/ARMCortexM55
 LIBDIR += -LLib/Camera_Middleware/ISP_Library/evision/Lib
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections

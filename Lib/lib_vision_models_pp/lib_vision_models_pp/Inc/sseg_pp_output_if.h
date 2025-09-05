@@ -33,6 +33,6 @@ typedef struct
   }
 #endif
 
-#endif      /* __OD_CENTERNET_PP_IF_H__  */
+#endif      /* __SSEG_PP_OUTPUT_IF__  */
 
 

@@ -108,8 +108,7 @@ static const ISP_IQParamTypeDef ISP_IQParamCacheInit_DUMMY = {
         .YSize = 0,
     },
     .gamma = {
-        .enablePipe1 = 0,
-        .enablePipe2 = 0,
+        .enable = 0,
     },
     .sensorDelay = {
         .delay = 0,

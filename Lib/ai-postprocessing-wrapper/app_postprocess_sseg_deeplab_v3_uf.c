@@ -25,14 +25,13 @@
 #if POSTPROCESS_TYPE == POSTPROCESS_SSEG_DEEPLAB_V3_UF
 static uint8_t out_sseg_map[AI_SSEG_DEEPLABV3_PP_WIDTH * AI_SSEG_DEEPLABV3_PP_HEIGHT];
 
-int32_t app_postprocess_init(void *params_postprocess)
+int32_t app_postprocess_init(void *params_postprocess, NN_Instance_TypeDef *NN_Instance)
 {
   int32_t error = AI_SSEG_POSTPROCESS_ERROR_NO;
   sseg_deeplabv3_pp_static_param_t *params = (sseg_deeplabv3_pp_static_param_t *) params_postprocess;
   params->nb_classes = AI_SSEG_DEEPLABV3_PP_NB_CLASSES;
   params->width = AI_SSEG_DEEPLABV3_PP_WIDTH;
   params->height = AI_SSEG_DEEPLABV3_PP_HEIGHT;
-  params->type = AI_SSEG_DATA_UINT8;
   error = sseg_deeplabv3_pp_reset(params);
   return error;
 }

@@ -23,13 +23,15 @@
 #include "usbd_cdc_if.h"
 #include "usb_device.h"
 
+/* Private constants ---------------------------------------------------------*/
+#define RX_PACKET_SIZE 512
+
 /* Private types -------------------------------------------------------------*/
 typedef struct {
-  uint8_t payload[1000];
+  uint8_t payload[RX_PACKET_SIZE];
   uint32_t payload_size;
 }
 ISP_ToolCom_packet_t;
-/* Private constants ---------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -59,8 +61,34 @@ void ISP_ToolCom_Init(void)
   */
 void ISP_ToolCom_ReceivedCb(uint8_t *buffer, uint32_t buffer_size)
 {
-  received_packet.payload_size = buffer_size;
-  memcpy(received_packet.payload, buffer, buffer_size);
+  static uint32_t total_buf_size = 0;
+
+  if (buffer_size == RX_PACKET_SIZE)
+  {
+    received_packet.payload_size = buffer_size;
+    memcpy(received_packet.payload, buffer, buffer_size);
+  }
+  else
+  {
+    /* The received packet is not complete */
+    if (total_buf_size == 0)
+    {
+      /* First part of the packet */
+      total_buf_size = buffer_size;
+      memcpy(received_packet.payload, buffer, buffer_size);
+    }
+    else
+    {
+      /* Second part of the packet */
+      received_packet.payload_size = total_buf_size + buffer_size;
+      if (received_packet.payload_size != RX_PACKET_SIZE)
+      {
+        printf("WARNING: unexpected RX Packet size: %ld\r\n", received_packet.payload_size);
+      }
+      memcpy(received_packet.payload + total_buf_size, buffer, buffer_size);
+      total_buf_size = 0;
+    }
+  }
 }
 
 /**

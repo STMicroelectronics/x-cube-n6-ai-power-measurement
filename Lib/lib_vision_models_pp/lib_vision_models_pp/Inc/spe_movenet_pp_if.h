@@ -22,23 +22,21 @@
 /* ------------------------------------- */
 typedef struct spe_movenet_pp_in
 {
-/*	float32_t inBuff[AI_SPE_MOVENET_PP_NB_KEYPOINTS *
-                     AI_SPE_MOVENET_PP_HEATMAP_WIDTH *
-                     AI_SPE_MOVENET_PP_HEATMAP_HEIGHT];
+/*	float32_t/int8_t inBuff[AI_SPE_MOVENET_PP_NB_KEYPOINTS *
+                            AI_SPE_MOVENET_PP_HEATMAP_WIDTH *
+                            AI_SPE_MOVENET_PP_HEATMAP_HEIGHT];
                      */
-	float32_t *inBuff;
+  void *inBuff;
 } spe_movenet_pp_in_t;
 
 
 
 typedef struct spe_movenet_pp_static_param {
-#ifdef _OLD_IMPL
-  float32_t *pTmpHeatMap;   /* Must be an array of size
-                               AI_SPE_MOVENET_PP_HEATMAP_WIDTH * AI_SPE_MOVENET_PP_HEATMAP_HEIGHT */
-#endif
   uint32_t  heatmap_width;
   uint32_t  heatmap_height;
   uint32_t  nb_keypoints;
+  float32_t raw_scale;
+  int8_t raw_zero_point;
 } spe_movenet_pp_static_param_t;
 
 
@@ -55,7 +53,7 @@ int32_t spe_movenet_pp_reset(spe_movenet_pp_static_param_t *pInput_static_param)
 
 
 /*!
- * @brief Movenet post processing
+ * @brief Movenet float32_t post processing
  *
  * @param [IN] Pointer on input data
  *             Pointer on output data
@@ -63,8 +61,20 @@ int32_t spe_movenet_pp_reset(spe_movenet_pp_static_param_t *pInput_static_param)
  * @retval Error code
  */
 int32_t spe_movenet_pp_process(spe_movenet_pp_in_t *pInput,
-                               spe_pp_out_t     *pOutput,
+                               spe_pp_out_t        *pOutput,
                                spe_movenet_pp_static_param_t *pInput_static_param);
+
+/*!
+ * @brief Movenet int8_t post processing
+ *
+ * @param [IN] Pointer on input data
+ *             Pointer on output data
+ *             pointer on static parameters
+ * @retval Error code
+ */
+int32_t spe_movenet_pp_process_int8(spe_movenet_pp_in_t *pInput,
+                                    spe_pp_out_t        *pOutput,
+                                    spe_movenet_pp_static_param_t *pInput_static_param);
 
 
 #ifdef __cplusplus
