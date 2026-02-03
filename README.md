@@ -92,7 +92,7 @@ Remove the components **R23**, **R24**, and **C27** from the DK board. This step
 
 Component to remove on board :
 
-![reowork_on_brd_dk](./_htmresc/rework_VddCore_2.png)
+![reowork_on_brd_dk](./_htmresc/rework_Vddcore_2.png)
 
 #### Current Injection
 
@@ -136,7 +136,7 @@ detailed instructions to use these scripts are listed in this [README.md](./Util
 - IAR Embedded Workbench for Arm (**EWARM 9.40.1**) + N6 patch ([**EWARMv9_STM32N6xx_V1.0.0**](STM32Cube_FW_N6/Utilities/PC_Software/EWARMv9_STM32N6xx_V1.0.0.zip))
 - STM32CubeIDE (**STM32CubeIDE 1.17.0**)
 - STM32CubeProgrammer (**v2.18.0**)
-- [STEdgeAI](https://www.st.com/en/development-tools/stedgeai-core.html) (**v2.2.0**)
+- [STEdgeAI](https://www.st.com/en/development-tools/stedgeai-core.html) (**v3.0.0**)
 
 
 ## Boot modes
@@ -156,7 +156,7 @@ __Boot modes:__
   4. update `Utilities/pwr_scripts/example_configuration.yml` file with the serial numbers of used devices (see [update_config_file](./Utilities/pwr_scripts/README.md#list-devices-to-identify-stlink-serial-numbers))
   5. run command `python ./capture.py power -c my_configuration.yml on` to provide VddCore (see [power_on_VddCore](./Utilities/pwr_scripts/README.md#power-on-power-device-to-load-firmware)).
 
-__Note__: This application does not use LCD. It only sends data over a VIRTUAL COM port, which is processed by the consumption measurement scripts.
+__Note__: This application does not use the LCD. It only sends data over a VIRTUAL COM port, which is processed by the consumption measurement scripts.
 ## Quickstart using prebuilt binaries
 
 Three binaries must be programmed in the board external flash using the following procedure:
@@ -167,9 +167,7 @@ Three binaries must be programmed in the board external flash using the followin
   4. Power the VddCore (see [power_on_VddCore](./Utilities/pwr_scripts/README.md#power-on-power-device-to-load-firmware)).
   5. Open STM32CubeProgrammer and choose the serial number corresponding to the STLINK embedded in the DK (STM32N6570-DK).
   ![CubeProg](./_htmresc/CubeProgCfg.png)
-  6. Program `Binary/ai_fsbl.hex` (First stage boot loader)
-  7. Program `Binary/network_data.hex` (params of the network; To be changed only when the network is changed)
-  8. Program `Binary/x-cube-n6-ai-power-measurement.hex` (firmware application)
+  8. Program `Binary/STM32N6570-DK/x-cube-n6-ai-power-measurement-dk.hex` (firmware application)
   9. Switch BOOT1 switch to Left position
   10. Power cycle the board
   11. Power cycle the STLINK-V3PWR `python ./capture.py power -c my_configuration.yml off` and then `python ./capture.py power -c my_configuration.yml on`
@@ -179,7 +177,7 @@ Three binaries must be programmed in the board external flash using the followin
 
 __Note__: This application does not use LCD. It only sends data over a VIRTUAL COM port, which is processed by the consumption measurement scripts.
 
-__Note__: The `Binary/x-cube-n6-ai-power-measurement.hex` firmware is built for MB1939 STM32N6570-DK with IMX335 Camera module.
+__Note__: The `Binary/STM32N6570-DK/x-cube-n6-ai-power-measurement-dk.hex` firmware is built for the MB1939 STM32N6570-DK with the IMX335 camera module. It is an all-in-one file that contains the application firmware, the model weights, and the first-stage bootloader.
 
 
 ### How to Program hex files using STM32CubeProgrammer UI
@@ -193,14 +191,8 @@ Make sure to have the STM32CubeProgrammer bin folder added in your path.
 ```bash
 export DKEL="<STM32CubeProgrammer_N6 Install Folder>/bin/ExternalLoader/MX66UW1G45G_STM32N6570-DK.stldr"
 
-# First Stage Boot loader
-STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -el $DKEL -hardRst -w Binary/ai_fsbl.hex
-
-# Network parameters and biases
-STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -el $DKEL -hardRst -w Binary/network_data.hex
-
-# Application Firmware
-STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -el $DKEL -hardRst -w Binary/x-cube-n6-ai-power-measurement.hex
+# Full application Firmware
+STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -el $DKEL -hardRst -w Binary/STM32N6570-DK/x-cube-n6-ai-power-measurement-dk.hex
 ```
 
 ## Quickstart using source code
@@ -221,7 +213,7 @@ Double click on `STM32CubeIDE/.project` to open project in STM32CubeIDE. Build a
 
 #### IAR EWARM
 
-Double click on `EWARM/Project.eww` to open project in IAR IDE. Build and run with build and run buttons.
+Double click on `EWARM/x-cube-n6-ai-power-measurement.eww` to open project in IAR IDE. Build and run with build and run buttons.
 
 #### Makefile
 
@@ -279,10 +271,16 @@ Once your app is built with Makefile, STM32CubeIDE, or EWARM, you can add a sign
 STM32_SigningTool_CLI -bin build/Project.bin -nk -t ssbl -hv 2.3 -o build/Project_sign.bin
 ```
 
-and then you can program the bin file at the address `0x70100000`;
+Next, program the first stage bootloader using the provided hex file, followed by the model weights, and finally the application binary file at address `0x70100000`:
 
 ```bash
 export DKEL="<STM32CubeProgrammer_N6 Install Folder>/bin/ExternalLoader/MX66UW1G45G_STM32N6570-DK.stldr"
+
+# First Stage Boot Loader
+STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -el $DKEL -hardRst -w FSBL/ai_fsbl.hex
+
+# Network Parameters and Biases
+STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -el $DKEL -hardRst -w Model/network_data.hex
 
 # Adapt build path to your IDE
 STM32_Programmer_CLI -c port=SWD mode=HOTPLUG -el $DKEL -hardRst -w build/Project_sign.bin 0x70100000
@@ -308,18 +306,28 @@ usage example:
 6. run command `python ./capture.py capture -c my_configuration.yml  -w capture_full.csv`
 7. the following message will immediately be displayed:
     ```
-    CAPTURING : press wake-up button
+    CAPTURING : press wake-up button (USER1)
     ```
 8. press USER1 button on DK board
 9. wait "capture DONE" message 
     ```
-    CAPTURE DONE 
+    CAPTURE DONE
     ```
 10. [Generate report](./Utilities/pwr_scripts/README.md#generate-power-report)
   `python ./full_sequence_power.py capture_full.csv`
 11. [Generate and display plot](./Utilities/pwr_scripts/README.md#display-csv)  `python ./capture.py display -r capture_full.csv`
 
 12. to display all clocked IPs: ` python ./full_sequence_power.py capture_full.csv -c`
+
+
+## How to update my project with a new version of ST Edge AI
+
+The neural network model files (`network.c/h`, `stai_network.c/h`, etc.) included in this project were generated using [STEdgeAI](https://www.st.com/en/development-tools/stedgeai-core.html) version 3.0.0.
+
+Using a different version of STEdgeAI to generate these model files may result in the following compile-time error:  
+`Possible mismatch in ll_aton library used`.
+
+If you encounter this error, please follow the STEdgeAI instructions on [How to update my project with a new version of ST Edge AI Core](https://stedgeai-dc.st.com/assets/embedded-docs/stneuralart_faqs_update_version.html) to update your project.
 
 
 ## Known Issues and Limitations

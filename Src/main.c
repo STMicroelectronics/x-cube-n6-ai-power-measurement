@@ -27,7 +27,8 @@
 #include "app_fuseprogramming.h"
 #include "stm32_lcd_ex.h"
 #include "app_postprocess.h"
-#include "ll_aton_rt_user_api.h"
+#include "stai.h"
+#include "stai_network.h"
 #include "app_cam.h"
 #include "main.h"
 #include "stm32n6xx_hal_rif.h"
@@ -99,6 +100,8 @@ CLASSES_TABLE;
 
 #define MAX_NUMBER_OUTPUT 5
 
+#define ARRAY_NB(a) (sizeof(a)/sizeof(a[0]))
+
 #if POSTPROCESS_TYPE == POSTPROCESS_OD_YOLO_V2_UF
  od_yolov2_pp_static_param_t pp_params;
 #elif POSTPROCESS_TYPE == POSTPROCESS_OD_YOLO_V5_UU
@@ -121,17 +124,18 @@ uint8_t nn_in_buffer[NN_WIDTH*NN_HEIGHT*NN_BPP];
 
 volatile int32_t cameraFrameReceived;
 
-const LL_Buffer_InfoTypeDef *nn_in_info;
-const LL_Buffer_InfoTypeDef *nn_out_info;
-LL_ATON_DECLARE_NAMED_NN_INSTANCE_AND_INTERFACE(Default);
-int number_output = 0;
+__attribute__ ((aligned (32)))
+static uint8_t network_Default_ctx[STAI_NETWORK_CONTEXT_SIZE];
+
+stai_size number_output = 0;
 
 od_pp_out_t pp_output;
 CACHEAXI_HandleTypeDef hcacheaxi;
 UART_HandleTypeDef huart1;
 
-float32_t *nn_out[MAX_NUMBER_OUTPUT];
+stai_ptr nn_out[MAX_NUMBER_OUTPUT];
 int32_t nn_out_len[MAX_NUMBER_OUTPUT];
+stai_ptr inputs[1];
 
 static void NPURam_enable(void);
 static void NPURam_disable(void);
@@ -150,7 +154,8 @@ static void nn_inference(void);
 static void postProcessing(void);
 static void sendTimestamp(void);
 static void deInitIPs(void);
-static void Run_Inference(void);
+static void Run_Inference(stai_network *network_instance);
+
 /**
   * @brief  Main program
   * @param  None
@@ -199,22 +204,6 @@ int main(void)
   Security_Config();
   IAC_Config();
 
-  nn_out_info = LL_ATON_Output_Buffers_Info(&NN_Instance_Default);
-
-  /* Count number of outputs */
-  while (nn_out_info[number_output].name != NULL)
-  {
-    number_output++;
-  }
-  assert(number_output <= MAX_NUMBER_OUTPUT);
-
-  for (int i = 0; i < number_output; i++)
-  {
-    nn_out[i] = (float32_t *) LL_Buffer_addr_start(&nn_out_info[i]);
-    nn_out_len[i] = LL_Buffer_len(&nn_out_info[i]);
-  }
-
-  app_postprocess_init(&pp_params, &NN_Instance_Default);
 
   /*** App Loop ***************************************************************/
   while (1)
@@ -385,7 +374,7 @@ static void runInference_freqScaling(void)
     pwr_timestamp_log("config npu clock scaling");
 
     HAL_SuspendTick();
-    Run_Inference();
+    Run_Inference(network_Default_ctx);
     HAL_ResumeTick();
     pwr_timestamp_log(frequencySteps[i].stepName);
   }
@@ -400,6 +389,7 @@ static void runInference_freqScaling(void)
 static void nn_inference(void)
 {
   int ret;
+  stai_network_info info;
 
   sysclk_NpuClockConfig();
   sysclk_NpuClockEnable();
@@ -417,29 +407,49 @@ static void nn_inference(void)
    */
   externMem_config();
 
-  /* use capture buffer as nn_input buffer */
-  nn_in_info = LL_ATON_Input_Buffers_Info(&NN_Instance_Default);
-  uint32_t nn_in_len = LL_Buffer_len(&nn_in_info[0]);
-  /* Note that we don't need to clean/invalidate those input buffers since they are only access in hardware */
-  ret = LL_ATON_Set_User_Input_Buffer_Default(0, nn_in_buffer, nn_in_len);
-  assert(ret == LL_ATON_User_IO_NOERROR);
+  /* initialize runtime */
+  ret = stai_runtime_init();
+  assert(ret == STAI_SUCCESS);
+  /* init model instance */
+  ret = stai_network_init(network_Default_ctx);
+  assert(ret == STAI_SUCCESS);
 
-  /* Initialize Cube.AI/ATON and model instance */
-  LL_ATON_RT_RuntimeInit();
-  LL_ATON_RT_Init_Network(&NN_Instance_Default);
+  ret = stai_network_get_info(network_Default_ctx, &info);
+  assert(ret == STAI_SUCCESS);
+  assert(info.n_inputs == 1);
+  assert(info.n_outputs <= MAX_NUMBER_OUTPUT);
+  number_output = info.n_outputs;
+
+  /* use capture buffer as NN input buffer */
+  inputs[0] = nn_in_buffer;
+  ret = stai_network_set_inputs(network_Default_ctx, inputs, ARRAY_NB(inputs));
+  assert(ret == STAI_SUCCESS);
+
+  /* Get the output buffers size & address */
+  ret = stai_network_get_outputs(network_Default_ctx, nn_out, &number_output);
+  assert(ret == STAI_SUCCESS);
+
+  assert(number_output <= MAX_NUMBER_OUTPUT);
+
+  for (int i = 0; i < number_output; i++)
+  {
+    nn_out_len[i] = info.outputs[i].size_bytes;
+  }
+
+  app_postprocess_init(&pp_params, &info);
 
   pwr_timestamp_log("NPU and NPU Rams config");
 
 #if(NPU_FRQ_SCALING == 0)
   /* run NN inference (dry run)*/
   HAL_SuspendTick();
-  Run_Inference();
+  Run_Inference(network_Default_ctx);
   HAL_ResumeTick();
   pwr_timestamp_log("nn inference (dry run)");
 
   /* run NN inference */
   HAL_SuspendTick();
-  Run_Inference();
+  Run_Inference(network_Default_ctx);
   HAL_ResumeTick();
   pwr_timestamp_log("nn inference");
 #else
@@ -452,6 +462,9 @@ static void nn_inference(void)
   BSP_XSPI_RAM_DeInit(0);
 #endif /* USE_PSRAM */
   __HAL_RCC_XSPIM_CLK_DISABLE();
+
+  ret = stai_network_deinit(network_Default_ctx);
+  assert(ret == STAI_SUCCESS);
 }
 
 
@@ -476,7 +489,7 @@ static void postProcessing(void)
   /* Discard nn_out region (used by pp_input and pp_outputs variables) to avoid Dcache evictions during nn inference */
   for (int i = 0; i < number_output; i++)
   {
-    float32_t *tmp = nn_out[i];
+    uint8_t *tmp = (uint8_t*)nn_out[i];
     SCB_InvalidateDCache_by_Addr(tmp, nn_out_len[i]);
   }
 #if(POWER_OVERDRIVE == 1)
@@ -626,7 +639,6 @@ static void NPURam_disable(void)
   */
 static void NPUCache_enable(void)
 {
-  npu_cache_init();
   npu_cache_enable();
 }
 
@@ -638,10 +650,27 @@ static void NPUCache_enable(void)
 static void NPUCache_disable(void)
 {
   npu_cache_disable();
-  npu_cache_deinit();
 }
 
 
+void npu_cache_enable_clocks_and_reset(void)
+{
+  __HAL_RCC_CACHEAXIRAM_MEM_CLK_ENABLE();
+  __HAL_RCC_CACHEAXIRAM_MEM_CLK_SLEEP_ENABLE();
+  __HAL_RCC_CACHEAXI_CLK_ENABLE();
+  __HAL_RCC_CACHEAXI_CLK_SLEEP_ENABLE();
+  __HAL_RCC_CACHEAXI_FORCE_RESET();
+  __HAL_RCC_CACHEAXI_RELEASE_RESET();
+}
+
+void npu_cache_disable_clocks_and_reset(void)
+{
+  __HAL_RCC_CACHEAXI_FORCE_RESET();
+  __HAL_RCC_CACHEAXIRAM_MEM_CLK_DISABLE();
+  __HAL_RCC_CACHEAXIRAM_MEM_CLK_SLEEP_DISABLE();
+  __HAL_RCC_CACHEAXI_CLK_DISABLE();
+  __HAL_RCC_CACHEAXI_CLK_SLEEP_DISABLE();
+}
 /**
   * @brief  RIF configuration
   * @param  None
@@ -777,22 +806,18 @@ static void Console_Config(void)
   }
 }
 
-static void Run_Inference(void)
+static void Run_Inference(stai_network *network_instance)
 {
-  LL_ATON_RT_RetValues_t ll_aton_rt_ret;
-
+  stai_return_code ret;
   do
   {
-    ll_aton_rt_ret = LL_ATON_RT_RunEpochBlock(&NN_Instance_Default);
-
-    /* Wait for next event */
-    if (ll_aton_rt_ret == LL_ATON_RT_WFE)
-    {
+    ret = stai_network_run(network_instance, STAI_MODE_ASYNC);
+    if (ret == STAI_RUNNING_WFE)
       LL_ATON_OSAL_WFE();
-    }
-  } while (ll_aton_rt_ret != LL_ATON_RT_DONE);
+  } while (ret == STAI_RUNNING_WFE || ret == STAI_RUNNING_NO_WFE);
 
-  LL_ATON_RT_Reset_Network(&NN_Instance_Default);
+  ret = stai_ext_network_new_inference(network_instance);
+  assert(ret == STAI_SUCCESS);
 }
 
 #ifdef  USE_FULL_ASSERT

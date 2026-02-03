@@ -381,6 +381,8 @@
                     <state>$PROJ_DIR$\..\Lib\Camera_Middleware\sensors\vd55g1</state>
                     <state>$PROJ_DIR$\..\Lib\Camera_Middleware</state>
                     <state>$PROJ_DIR$\..\Lib\ai-postprocessing-wrapper</state>
+                    <state>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\Devices\STM32N6xx</state>
+                    <state>$PROJ_DIR$\..\Model</state>
                 </option>
                 <option>
                     <name>CCStdIncCheck</name>
@@ -1134,16 +1136,16 @@
             <name>$PROJ_DIR$\..\Src\main.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Src\mcu_cache.c</name>
+            <name>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\Devices\STM32N6xx\mcu_cache.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Model\network.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Lib\AI_Runtime\Lib\ABI2.1\ARMCortexM55\NetworkRuntime1020_CM55_IAR.a</name>
+            <name>$PROJ_DIR$\..\Lib\AI_Runtime\Lib\ABI2.1\ARMCortexM55\NetworkRuntime1100_CM55_IAR.a</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Src\npu_cache.c</name>
+            <name>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\Devices\STM32N6xx\npu_cache.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Lib\lib_vision_models_pp\lib_vision_models_pp\Src\od_pp_centernet.c</name>
@@ -1165,6 +1167,9 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\Src\pwr_timestamp.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Model\stai_network.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Src\stm32_lcd_ex.c</name>
@@ -1308,6 +1313,9 @@
             <name>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\ll_aton\ll_aton.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\ll_aton\ll_aton_cipher.c</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\ll_aton\ll_aton_lib.c</name>
         </file>
         <file>
@@ -1318,6 +1326,9 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\ll_aton\ll_aton_runtime.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\ll_aton\ll_aton_stai_internal.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Lib\AI_Runtime\Npu\ll_aton\ll_aton_util.c</name>
@@ -1406,7 +1417,13 @@
         <group>
             <name>ISP_Library</name>
             <file>
+                <name>$PROJ_DIR$\..\Lib\Camera_Middleware\ISP_Library\isp\Src\isp_ae_algo.c</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\Lib\Camera_Middleware\ISP_Library\isp\Src\isp_algo.c</name>
+            </file>
+            <file>
+                <name>$PROJ_DIR$\..\Lib\Camera_Middleware\ISP_Library\isp\Src\isp_awb_algo.c</name>
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Lib\Camera_Middleware\ISP_Library\isp\Src\isp_cmd_parser.c</name>
@@ -1419,12 +1436,6 @@
             </file>
             <file>
                 <name>$PROJ_DIR$\..\Lib\Camera_Middleware\ISP_Library\isp\Src\isp_tool_com.c</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Lib\Camera_Middleware\ISP_Library\evision\Lib\libn6-evision-awb_iar.a</name>
-            </file>
-            <file>
-                <name>$PROJ_DIR$\..\Lib\Camera_Middleware\ISP_Library\evision\Lib\libn6-evision-st-ae_iar.a</name>
             </file>
         </group>
     </group>

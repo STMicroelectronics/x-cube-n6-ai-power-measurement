@@ -59,7 +59,7 @@
 		<link>
 			<name>Application/mcu_cache.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/Src/mcu_cache.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/Lib/AI_Runtime/Npu/Devices/STM32N6xx/mcu_cache.c</locationURI>
 		</link>
 		<link>
 			<name>Application/network.c</name>
@@ -69,12 +69,17 @@
 		<link>
 			<name>Application/npu_cache.c</name>
 			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/Src/npu_cache.c</locationURI>
+			<locationURI>PARENT-1-PROJECT_LOC/Lib/AI_Runtime/Npu/Devices/STM32N6xx/npu_cache.c</locationURI>
 		</link>
 		<link>
 			<name>Application/pwr_timestamp.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Src/pwr_timestamp.c</locationURI>
+		</link>
+		<link>
+			<name>Application/stai_network.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Model/stai_network.c</locationURI>
 		</link>
 		<link>
 			<name>Application/stm32_lcd_ex.c</name>
@@ -157,6 +162,11 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Lib/AI_Runtime/Npu/ll_aton/ll_aton.c</locationURI>
 		</link>
 		<link>
+			<name>ll_aton/ll_aton_cipher.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Lib/AI_Runtime/Npu/ll_aton/ll_aton_cipher.c</locationURI>
+		</link>
+		<link>
 			<name>ll_aton/ll_aton_lib.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Lib/AI_Runtime/Npu/ll_aton/ll_aton_lib.c</locationURI>
@@ -175,6 +185,11 @@
 			<name>ll_aton/ll_aton_runtime.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Lib/AI_Runtime/Npu/ll_aton/ll_aton_runtime.c</locationURI>
+		</link>
+		<link>
+			<name>ll_aton/ll_aton_stai_internal.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Lib/AI_Runtime/Npu/ll_aton/ll_aton_stai_internal.c</locationURI>
 		</link>
 		<link>
 			<name>ll_aton/ll_aton_util.c</name>
@@ -317,9 +332,19 @@
 			<locationURI>PARENT-1-PROJECT_LOC/Lib/Camera_Middleware/cmw_utils.c</locationURI>
 		</link>
 		<link>
+			<name>Middlewares/ISP_Library/isp_ae_algo.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Lib/Camera_Middleware/ISP_Library/isp/Src/isp_ae_algo.c</locationURI>
+		</link>
+		<link>
 			<name>Middlewares/ISP_Library/isp_algo.c</name>
 			<type>1</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Lib/Camera_Middleware/ISP_Library/isp/Src/isp_algo.c</locationURI>
+		</link>
+		<link>
+			<name>Middlewares/ISP_Library/isp_awb_algo.c</name>
+			<type>1</type>
+			<locationURI>PARENT-1-PROJECT_LOC/Lib/Camera_Middleware/ISP_Library/isp/Src/isp_awb_algo.c</locationURI>
 		</link>
 		<link>
 			<name>Middlewares/ISP_Library/isp_cmd_parser.c</name>

@@ -134,8 +134,6 @@ void CAM_Init(void)
   cam_conf.width = CAMERA_WIDTH;
   cam_conf.height = CAMERA_HEIGHT;
   cam_conf.fps = CAMERA_FPS;
-  cam_conf.pixel_format = 0; /* Default; Not implemented yet */
-  cam_conf.anti_flicker = 0;
   cam_conf.mirror_flip = CAMERA_FLIP;
 
   ret = CMW_CAMERA_Init(&cam_conf, NULL);

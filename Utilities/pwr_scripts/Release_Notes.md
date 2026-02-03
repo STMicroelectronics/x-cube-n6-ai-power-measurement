@@ -20,6 +20,10 @@ Those scripts are developed to automatize the power measurment on STM32N6 DK boa
 
 ## Update history
 
+### V1.0.3 / January 2026
+
+- Update user message in capture.py
+
 ### V1.0.2 / August 2025
 
 - Update documents

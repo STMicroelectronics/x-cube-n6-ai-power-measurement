@@ -222,7 +222,7 @@ def capture(args):
     # start devices
     for device in devices:
         device.start()
-    print("CAPTURING : press wake-up button")
+    print("CAPTURING : press wake-up button (USER1)")
     # wait end of capture
     for device in devices:
         device.wait()

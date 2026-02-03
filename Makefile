@@ -42,8 +42,9 @@ C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/vision_models_pp_
 C_SOURCES += Lib/lib_vision_models_pp/lib_vision_models_pp/Src/vision_models_pp_maxi_iu8.c
 C_SOURCES += Src/stm32_lcd_ex.c
 C_SOURCES += Src/stm32n6xx_it.c
-C_SOURCES += Src/mcu_cache.c
-C_SOURCES += Src/npu_cache.c
+C_SOURCES += Lib/AI_Runtime/Npu/Devices/STM32N6xx/mcu_cache.c
+C_SOURCES += Lib/AI_Runtime/Npu/Devices/STM32N6xx/npu_cache.c
+C_SOURCES += Model/stai_network.c
 C_SOURCES += Model/network.c
 C_SOURCES += Src/pwr_timestamp.c
 C_SOURCES += Src/system_clock.c
@@ -85,6 +86,8 @@ C_SOURCES += Lib/Camera_Middleware/sensors/vd55g1/vd55g1.c
 C_SOURCES += Lib/Camera_Middleware/sensors/cmw_vd55g1.c
 C_SOURCES += Lib/Camera_Middleware/sensors/cmw_vd66gy.c
 C_SOURCES += Lib/Camera_Middleware/sensors/cmw_imx335.c
+C_SOURCES += Lib/Camera_Middleware/ISP_Library/isp/Src/isp_awb_algo.c
+C_SOURCES += Lib/Camera_Middleware/ISP_Library/isp/Src/isp_ae_algo.c
 C_SOURCES += Src/app_cam.c
 C_SOURCES += Lib/Camera_Middleware/ISP_Library/isp/Src/isp_algo.c
 C_SOURCES += Lib/Camera_Middleware/ISP_Library/isp/Src/isp_cmd_parser.c
@@ -101,6 +104,8 @@ C_SOURCES += Lib/AI_Runtime/Npu/ll_aton/ll_sw_integer.c
 C_SOURCES += Lib/AI_Runtime/Npu/ll_aton/ll_aton_lib.c
 C_SOURCES += Lib/AI_Runtime/Npu/ll_aton/ll_aton_lib_sw_operators.c
 C_SOURCES += Lib/AI_Runtime/Npu/ll_aton/ecloader.c
+C_SOURCES += Lib/AI_Runtime/Npu/ll_aton/ll_aton_cipher.c
+C_SOURCES += Lib/AI_Runtime/Npu/ll_aton/ll_aton_stai_internal.c
 
 
 # ASM sources
@@ -182,10 +187,11 @@ C_INCLUDES += -ILib/Camera_Middleware/sensors/vd55g1
 C_INCLUDES += -ILib/Camera_Middleware/sensors/vd6g
 
 C_INCLUDES += -IInc
+C_INCLUDES += -IModel
 C_INCLUDES += -ILib/ai-postprocessing-wrapper
 C_INCLUDES += -ILib/lib_vision_models_pp/lib_vision_models_pp/Inc
 C_INCLUDES += -ILib/AI_Runtime/Npu/ll_aton
-C_INCLUDES += -ILib/AI_Runtime/Npu/Devices/STM32N6XX
+C_INCLUDES += -ILib/AI_Runtime/Npu/Devices/STM32N6xx
 C_INCLUDES += -ISTM32Cube_FW_N6/Drivers/STM32N6xx_HAL_Driver/Inc
 C_INCLUDES += -ISTM32Cube_FW_N6/Drivers/STM32N6xx_HAL_Driver/Inc/Legacy
 C_INCLUDES += -ISTM32Cube_FW_N6/Drivers/CMSIS/Device/ST/STM32N6xx/Include
@@ -196,6 +202,7 @@ C_INCLUDES += -ISTM32Cube_FW_N6/Drivers/BSP/STM32N6570-DK
 C_INCLUDES += -ILib/Camera_Middleware/ISP_Library/evision/Inc
 C_INCLUDES += -ILib/Camera_Middleware/ISP_Library/isp/Inc
 C_INCLUDES += -ILib/AI_Runtime/Inc
+C_INCLUDES += -ILib/AI_Runtime/Npu/Devices/STM32N6xx
 C_INCLUDES += -ISTM32Cube_FW_N6/Utilities/lcd
 C_INCLUDES += -ISTM32Cube_FW_N6/Drivers/BSP/Components/aps256xx
 
@@ -218,9 +225,8 @@ CFLAGS += -std=gnu11
 LDSCRIPT = STM32CubeIDE/STM32N657xx.ld
 
 # libraries
-LIBS = -lc -lm -lnosys -l:NetworkRuntime1020_CM55_GCC.a -ln6-evision-awb_gcc -ln6-evision-st-ae_gcc
+LIBS = -lc -lm -lnosys -l:NetworkRuntime1100_CM55_GCC.a
 LIBDIR = -LLib/AI_Runtime/Lib/GCC/ARMCortexM55
-LIBDIR += -LLib/Camera_Middleware/ISP_Library/evision/Lib
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 # Uncomment to enable %f formatted output
 LDFLAGS += -u _printf_float
